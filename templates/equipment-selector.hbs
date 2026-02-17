@@ -1,0 +1,57 @@
+<section class="nimble-levelling__root">
+	<div class="nimble-levelling__header">
+		<i class="fa-solid fa-shield-halved nimble-levelling__header-icon"></i>
+		<div class="nimble-levelling__header-info">
+			<h2 class="nimble-levelling__header-title">Equipment Selection</h2>
+			<p class="nimble-levelling__header-subtitle">{{className}} &mdash; {{proficiencySummary}}</p>
+		</div>
+	</div>
+
+	{{!-- Category Filter --}}
+	<div class="nimble-levelling__category-tabs">
+		<button type="button"
+				class="nimble-levelling__category-tab {{#unless activeCategory}}nimble-levelling__category-tab--active{{/unless}}"
+				data-action="filterCategory" data-category="">
+			All
+		</button>
+		{{#each categories}}
+			<button type="button"
+					class="nimble-levelling__category-tab {{#if this.active}}nimble-levelling__category-tab--active{{/if}}"
+					data-action="filterCategory" data-category="{{this.id}}">
+				<i class="{{this.icon}}"></i> {{this.label}}
+			</button>
+		{{/each}}
+	</div>
+
+	{{!-- Equipment List --}}
+	<div class="nimble-levelling__scroll-area">
+		{{#if filteredEquipment.length}}
+			<div class="nimble-levelling__card-grid">
+				{{#each filteredEquipment}}
+					<div class="nimble-levelling__card {{#if this.selected}}nimble-levelling__card--selected{{/if}}"
+						 data-action="toggleEquipment" data-uuid="{{this.uuid}}">
+						<input type="checkbox" class="nimble-levelling__card-checkbox"
+							   {{#if this.selected}}checked{{/if}} />
+						<img class="nimble-levelling__card-img" src="{{this.img}}" alt="{{this.name}}" />
+						<div class="nimble-levelling__card-content">
+							<div class="nimble-levelling__card-name">{{this.name}}</div>
+							<div class="nimble-levelling__card-meta">{{this.typeLabel}}</div>
+						</div>
+					</div>
+				{{/each}}
+			</div>
+		{{else}}
+			<div class="nimble-levelling__empty">No equipment matches the current filter.</div>
+		{{/if}}
+	</div>
+
+	<div class="nimble-levelling__actions">
+		<button type="button" class="nimble-levelling__btn" data-action="cancel">
+			<i class="fa-solid fa-xmark"></i> Cancel
+		</button>
+		<button type="button" class="nimble-levelling__btn" data-action="confirm"
+				{{#unless hasSelection}}disabled{{/unless}}>
+			<i class="fa-solid fa-check"></i> Grant Selected ({{selectedCount}})
+		</button>
+	</div>
+</section>

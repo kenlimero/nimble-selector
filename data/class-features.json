@@ -1,0 +1,325 @@
+{
+  "berserker": {
+    "base": {
+      "1": ["Rage", "That all you got?!"],
+      "2": ["Intensifying Fury", "One with the Ancients"],
+      "3": ["Bloodlust"],
+      "4": ["Enduring Rage"],
+      "5": ["Rage (2)"],
+      "6": ["Intensifying Fury (2)"],
+      "9": ["Intensifying Fury (3)"],
+      "13": ["Intensifying Fury (4)"],
+      "17": ["Intensifying Fury (5)"],
+      "18": ["Deep Rage"],
+      "20": ["Boundless Rage"]
+    },
+    "subclasses": {
+      "path-of-the-mountainheart": {
+        "3": ["Stone's Resilience", "Mountainous Tenacity"],
+        "7": ["Unbreakable"],
+        "11": ["Titan's Fury"],
+        "15": ["Mountain's Endurance"]
+      },
+      "path-of-the-red-mist": {
+        "3": ["Blood Frenzy", "Savage Awareness"],
+        "7": ["Unstoppable Brutality"],
+        "11": ["Opportunistic Frenzy"],
+        "15": ["Onslaught"]
+      }
+    }
+  },
+  "the-cheat": {
+    "base": {
+      "1": ["Sneak Attack", "Vicious Opportunist"],
+      "2": ["Cheat"],
+      "3": ["Sneak Attack (2)", "Thieves' Cant"],
+      "5": ["Twist the Blade", "Quick Read"],
+      "6": ["THAT'S Not What Happened!"],
+      "7": ["Sneak Attack (3)"],
+      "9": ["Sneak Attack (4)"],
+      "11": ["Sneak Attack (5)"],
+      "13": ["Twist the Blade (2)"],
+      "15": ["Sneak Attack (6)"],
+      "17": ["Sneak Attack (7)"],
+      "20": ["Supreme Execution"]
+    },
+    "subclasses": {
+      "scoundrel": {
+        "3": ["Low Blow", "Sweet Talk"],
+        "7": ["Pocket Sand"],
+        "11": ["Escape Plan"],
+        "15": ["Heads I Win, Tails You Lose"]
+      },
+      "silent-blade": {
+        "3": ["Amidst All This Commotion…", "Leave No Trace"],
+        "7": ["Cunning Strike"],
+        "11": ["Professional Skulker"],
+        "15": ["KILL"]
+      }
+    }
+  },
+  "commander": {
+    "base": {
+      "1": ["Coordinated Strike!"],
+      "2": ["Commander's Orders", "Field Medic"],
+      "4": ["Fit for Any Battlefield"],
+      "5": ["Master Commander", "Combat Tactics"],
+      "6": ["Weapon Mastery"],
+      "9": ["Master Commander (2)", "Combat Tactics (2)"],
+      "13": ["Master Commander (3)", "Combat Tactics (3)"],
+      "14": ["Weapon Mastery (3)"],
+      "17": ["Master Commander (4)", "Combat Tactics (4)"],
+      "18": ["Unparalleled Tactics"],
+      "20": ["Captain of Legions"]
+    },
+    "subclasses": {
+      "champion-of-the-bulwark": {
+        "3": ["Armor Master", "Shield Expert"],
+        "7": ["Juggernaut"],
+        "11": ["Taunting Strike"],
+        "15": ["Shield Wall"]
+      },
+      "champion-of-the-vanguard": {
+        "3": ["Advance!"],
+        "7": ["Experienced Commander"],
+        "11": ["Survey the Battlefield"],
+        "15": ["As One!"]
+      },
+      "spellblade": {
+        "3": ["Arcane Command", "Firebrand", "Deep Knowledge (1)"],
+        "7": ["Deep Knowledge (2)"],
+        "11": ["Deep Knowledge (3)"],
+        "15": ["Deep Knowledge (4)"]
+      }
+    }
+  },
+  "hunter": {
+    "base": {
+      "1": ["Hunter's Mark", "Forager"],
+      "2": ["Thrill of the Hunt", "Roll & Strike"],
+      "3": ["Tracker's Intuition"],
+      "4": ["Explorer of the Wilds"],
+      "5": ["Hunter's Resolve", "Final Takedown"],
+      "6": ["Versatile Bowmaster"],
+      "9": ["No Escape"],
+      "10": ["Veteran Stalker", "Keen Eye, Steady Hand"],
+      "13": ["Keen Sight"],
+      "17": ["Peerless Hunter"],
+      "18": ["Wild Endurance"],
+      "20": ["Nemesis"]
+    },
+    "subclasses": {
+      "keeper-of-the-shadowpath": {
+        "3": ["Ambusher", "Skilled Tracker", "Skilled Navigator"],
+        "7": ["Primal Predator"],
+        "11": ["Pack Hunter"],
+        "15": ["Apex Predator"]
+      },
+      "keeper-of-the-wildheart": {
+        "3": ["Impressive Form", "I Have the High Ground"],
+        "7": ["Resourceful Herbalist", "Healing Salve"],
+        "11": ["Ha! I'm Over Here!"],
+        "15": ["Unparalleled Survivalist"]
+      },
+      "beastmaster": {
+        "3": ["Beastmaster", "Small Companion - Keen Eyes", "Small Companion - Protect Me!", "Small Companion - Go for the Throat!", "Medium Companion - Ferocious", "Medium Companion - Protect Me!", "Medium Companion - Go for the Throat!", "Large Companion - Alpha Protector", "Large Companion - Protect Me!", "Large Companion - Go for the Throat!"]
+      }
+    }
+  },
+  "mage": {
+    "base": {
+      "1": ["Elemental Spellcasting"],
+      "2": ["Mana and Unlock Tier 1 Spells", "Talented Researcher"],
+      "3": ["Elemental Mastery"],
+      "4": ["Spellshaper"],
+      "5": ["Elemental Surge"],
+      "10": ["Elemental Surge (2)"],
+      "17": ["Elemental Surge (3)"],
+      "20": ["Archmage"]
+    },
+    "subclasses": {
+      "chaos": {
+        "3": ["Force of Chaos"],
+        "7": ["Tempest Mage", "Chaos Lash"],
+        "11": ["Thrive in Chaos"],
+        "15": ["Master of Chaos"]
+      },
+      "control": {
+        "3": ["Force of Will", "Deny Fate"],
+        "7": ["At Any Cost", "Nullify"],
+        "11": ["Steel Will"],
+        "15": ["Supreme Control"]
+      }
+    }
+  },
+  "oathsworn": {
+    "base": {
+      "1": ["Radiant Judgment", "Lay on Hands"],
+      "2": ["Mana and Unlock Radiant Spellcasting", "Zealot", "Paragon of Virtue"],
+      "3": ["Radiant Judgment (2)"],
+      "4": ["My Life, for My Friends"],
+      "5": ["Radiant Judgment (3)"],
+      "8": ["Radiant Judgment (4)"],
+      "10": ["Radiant Judgment (5)"],
+      "14": ["Radiant Judgment (6)"],
+      "18": ["Unending Judgment"],
+      "20": ["Glorious Paragon"]
+    },
+    "subclasses": {
+      "oath-of-refuge": {
+        "3": ["Aura of Refuge"],
+        "7": ["Face Me, Foul Creature!"],
+        "11": ["Glorious Reprieve"],
+        "15": ["Divine Grace"]
+      },
+      "oath-of-vengeance": {
+        "3": ["Aura of Zeal"],
+        "7": ["Avenger"],
+        "11": ["Unerring Judgment"],
+        "15": ["Maximum Judgment"]
+      },
+      "oathbreaker": {
+        "3": ["Dark Benediction", "Paragon of Power", "Aura of Suffering", "We All Suffer", "Bring Me Your Pain"],
+        "7": ["Torment"],
+        "11": ["Exploit"],
+        "15": ["Bloody Terror"]
+      }
+    }
+  },
+  "shadowmancer": {
+    "base": {
+      "1": ["Shadow Blast", "Summon Shadows"],
+      "2": ["Master of Darkness", "Pilfered Power"],
+      "3": ["The Pact is Sealed"],
+      "4": ["A Gift from the Master"],
+      "6": ["Shadowmastery"],
+      "12": ["Greedy Pact"],
+      "17": ["Dire Shadows"],
+      "20": ["Eldritch Usurper"]
+    },
+    "subclasses": {
+      "abyssal-depths": {
+        "3": ["Master of Nightfrost"],
+        "7": ["Shadowfrost"],
+        "11": ["Glacial Resilience"],
+        "15": ["Cryomancer's Reprisal"]
+      },
+      "red-dragon": {
+        "3": ["Draconic Crimson Rite"],
+        "7": ["We'll ALL Burn!"],
+        "11": ["Heart of Burning Fire"],
+        "15": ["Enveloped by the Master"]
+      },
+      "reaver": {
+        "3": ["Hollow One", "Bonescythe", "Shadow Exploit", "Martyr Spawn"],
+        "7": ["Grim Harrow", "Reap"],
+        "11": ["My Blood, My Power", "Otherworldly Might"],
+        "15": ["I'm the Patron Now!"]
+      }
+    }
+  },
+  "shepherd": {
+    "base": {
+      "1": ["Keeper of Life & Death", "Searing Light"],
+      "2": ["Mana and Unlock Tier 1 Spells", "Lifebinding Spirit"],
+      "3": ["Master of Twilight"],
+      "5": ["Sacred Grace"],
+      "17": ["Revitalizing Blessing"],
+      "20": ["Twilight Sage"]
+    },
+    "subclasses": {
+      "luminary-of-malice": {
+        "3": ["Soul Reaper", "Harbinger of Decay"],
+        "7": ["Veilwalker's Blessing"],
+        "11": ["Deathbringer's Touch"],
+        "15": ["Conduit of Death"]
+      },
+      "luminary-of-mercy": {
+        "3": ["Merciful Healing", "Life is Beautiful"],
+        "7": ["Conduit of Light"],
+        "11": ["Powerful Healer"],
+        "15": ["Empowered Conduit"]
+      }
+    }
+  },
+  "songweaver": {
+    "base": {
+      "1": ["Wind Spellcasting", "Vicious Mockery", "Songweaver's Inspiration"],
+      "2": ["Mana and Unlock Tier 1 Spells", "Jack of All Trades", "Song of Rest"],
+      "3": ["Quick Wit", "Windbag"],
+      "4": ["Lyrical Weaponry"],
+      "5": ["A \"People\" Person"],
+      "20": ["I'm So Famous!"]
+    },
+    "subclasses": {
+      "herald-of-courage": {
+        "3": ["Inspiring Presence"],
+        "7": ["Unfailing Courage"],
+        "11": ["Fire in my Bones"],
+        "15": ["Chorus of Champions"]
+      },
+      "herald-of-snark": {
+        "3": ["Opportunistic Snark"],
+        "7": ["Fight Picker"],
+        "11": ["Chord of Chaos"],
+        "15": ["Words Like Swords"]
+      }
+    }
+  },
+  "stormshifter": {
+    "base": {
+      "1": ["Master of Storms", "Beastshift"],
+      "2": ["Direbeast Form", "Mana and Unlock Tier 1 Spells"],
+      "3": ["Direbeast Form (2)"],
+      "4": ["Stormcaller"],
+      "5": ["Direbeast Form (3)"],
+      "6": ["Chimeric Boon", "Expert Shifter"],
+      "8": ["Stormborn"],
+      "13": ["Stormborn (2)"],
+      "20": ["Archdruid"]
+    },
+    "subclasses": {
+      "circle-of-fang-claw": {
+        "3": ["Swiftshift", "Windborne Protector", "Friend of Beasts"],
+        "7": ["Unleash the Beast", "Storm Wake"],
+        "11": ["Master of Forms", "Venomous Gaze"],
+        "15": ["Master of Forms (2)"]
+      },
+      "circle-of-sky-storm": {
+        "3": ["Deepening Study", "Creature of the Fey", "Attuned to Nature"],
+        "7": ["Raging Tempest"],
+        "11": ["Primordial Force"],
+        "15": ["Master of Storm"]
+      }
+    }
+  },
+  "zephyr": {
+    "base": {
+      "1": ["Iron Defense", "Swift Fists"],
+      "2": ["Swift Feet", "Burst of Speed"],
+      "3": ["Kinetic Momentum", "Ethereal Projection"],
+      "4": ["Unyielding Resolve", "Martial Master"],
+      "5": ["Reverberating Strikes"],
+      "6": ["Infuse Strength"],
+      "9": ["Swift Feet (2)"],
+      "10": ["Unyielding Resolve (2)"],
+      "13": ["Iron Defense (2)"],
+      "17": ["Unyielding Resolve (3)"],
+      "20": ["Windborne"]
+    },
+    "subclasses": {
+      "way-of-flame": {
+        "3": ["Exploding Soul"],
+        "7": ["Blazing Speed"],
+        "11": ["Chain Reaction"],
+        "15": ["Burning Soul"]
+      },
+      "way-of-pain": {
+        "3": ["Bring the Pain"],
+        "7": ["Share My Pain"],
+        "11": ["Pain Sharpens the Mind"],
+        "15": ["Echoed Agony"]
+      }
+    }
+  }
+}

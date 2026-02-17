@@ -1,0 +1,65 @@
+{
+	"NIMBLE_LEVELLING": {
+		"keybindings": {
+			"openLevelling": "Open Nimble Levelling",
+			"openLevellingHint": "Opens the Nimble Levelling panel for the selected token or default character."
+		},
+		"settings": {
+			"autoOpenOnLevelUp": "Auto-open on Level Up",
+			"autoOpenOnLevelUpHint": "Automatically open the Levelling panel when a character levels up.",
+			"autoSelectFeatures": "Auto-select Features",
+			"autoSelectFeaturesHint": "Automatically pre-select new class features that are not yet on the character sheet."
+		},
+		"panel": {
+			"title": "Nimble Levelling",
+			"classFeatures": "Class Features",
+			"spells": "Spells",
+			"equipment": "Equipment",
+			"grantAll": "Grant All Selected",
+			"maxTier": "Max spell tier",
+			"armor": "Armor",
+			"weapons": "Weapons",
+			"noFeatures": "No new features at this level.",
+			"noSchools": "No spell schools available yet.",
+			"owned": "Owned",
+			"none": "None"
+		},
+		"features": {
+			"title": "Class Features",
+			"selectAll": "Select All",
+			"deselectAll": "Deselect All",
+			"compendiumMatch": "Compendium match",
+			"notFound": "Not found in compendium",
+			"noFeatures": "No features available for the selected levels."
+		},
+		"spells": {
+			"title": "Spell Selection",
+			"allSchools": "All",
+			"allTiers": "All Tiers",
+			"cantrip": "Cantrip",
+			"tier": "Tier",
+			"noSpells": "No spells match the current filters."
+		},
+		"equipment": {
+			"title": "Equipment Selection",
+			"all": "All",
+			"weapons": "Weapons",
+			"armor": "Armor",
+			"shields": "Shields",
+			"consumables": "Consumables",
+			"misc": "Misc",
+			"noEquipment": "No equipment matches the current filter."
+		},
+		"actions": {
+			"cancel": "Cancel",
+			"confirm": "Grant Selected",
+			"grantSelected": "Grant Selected"
+		},
+		"notifications": {
+			"granted": "Granted {count} item(s) to {name}.",
+			"noSelection": "No items selected. Open a selector and make your choices first.",
+			"noClass": "This character has no class assigned.",
+			"loading": "Nimble Levelling is still loading..."
+		}
+	}
+}

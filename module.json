@@ -1,0 +1,40 @@
+{
+  "id": "nimble-levelling",
+  "title": "Nimble Levelling",
+  "description": "Automates class feature, spell, and equipment selection for the Nimble v2 system.",
+  "version": "1.0.0",
+  "compatibility": {
+    "minimum": "13",
+    "verified": "13",
+    "maximum": "13.999"
+  },
+  "relationships": {
+    "systems": [
+      {
+        "id": "nimble",
+        "type": "system",
+        "compatibility": {
+          "minimum": "0.6.0"
+        }
+      }
+    ]
+  },
+  "authors": [
+    {
+      "name": "Nimble Levelling"
+    }
+  ],
+  "esmodules": [
+    "scripts/module.mjs"
+  ],
+  "styles": [
+    "styles/nimble-levelling.css"
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ]
+}

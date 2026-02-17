@@ -1,0 +1,87 @@
+{
+  "mage": {
+    "base": {
+      "1": ["fire", "ice", "lightning"],
+      "3": ["+utility"]
+    },
+    "subclasses": {
+      "chaos": {
+        "7": ["+wind"]
+      },
+      "control": {
+        "7": ["+necrotic"]
+      }
+    }
+  },
+  "oathsworn": {
+    "base": {
+      "2": ["radiant"]
+    },
+    "subclasses": {
+      "oathbreaker": {
+        "3": ["+necrotic"]
+      }
+    }
+  },
+  "shadowmancer": {
+    "base": {
+      "2": ["necrotic"]
+    },
+    "subclasses": {
+      "abyssal-depths": {
+        "3": ["+ice"]
+      },
+      "red-dragon": {
+        "3": ["+fire"]
+      }
+    }
+  },
+  "shepherd": {
+    "base": {
+      "1": ["radiant", "necrotic"],
+      "3": ["+utility"]
+    },
+    "subclasses": {}
+  },
+  "songweaver": {
+    "base": {
+      "1": ["wind"],
+      "3": ["+utility"]
+    },
+    "choices": {
+      "1": {
+        "count": 1,
+        "type": "school"
+      }
+    },
+    "subclasses": {}
+  },
+  "stormshifter": {
+    "base": {
+      "1": ["lightning", "wind"]
+    },
+    "subclasses": {
+      "circle-of-sky-storm": {
+        "3": {
+          "choices": {
+            "count": 1,
+            "options": ["ice", "radiant"]
+          }
+        }
+      }
+    }
+  },
+  "commander": {
+    "base": {},
+    "subclasses": {
+      "spellblade": {
+        "3": {
+          "choices": {
+            "count": 1,
+            "type": "any-school"
+          }
+        }
+      }
+    }
+  }
+}

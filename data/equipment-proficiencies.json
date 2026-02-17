@@ -1,0 +1,51 @@
+{
+  "berserker": {
+    "armor": [],
+    "weapons": ["all-str"]
+  },
+  "the-cheat": {
+    "armor": ["leather"],
+    "weapons": ["dex"]
+  },
+  "commander": {
+    "armor": ["mail", "shields"],
+    "weapons": ["all-martial"],
+    "subclasses": {
+      "champion-of-the-bulwark": {
+        "armor": ["+plate"]
+      }
+    }
+  },
+  "hunter": {
+    "armor": ["leather"],
+    "weapons": ["dex"]
+  },
+  "mage": {
+    "armor": ["cloth"],
+    "weapons": ["blades", "staves", "wands"]
+  },
+  "oathsworn": {
+    "armor": ["all"],
+    "weapons": ["str"]
+  },
+  "shadowmancer": {
+    "armor": ["cloth"],
+    "weapons": ["blades", "wands"]
+  },
+  "shepherd": {
+    "armor": ["mail", "shields"],
+    "weapons": ["str", "wands"]
+  },
+  "songweaver": {
+    "armor": ["cloth", "leather"],
+    "weapons": ["dex", "wands"]
+  },
+  "stormshifter": {
+    "armor": ["cloth", "leather"],
+    "weapons": ["staves", "wands"]
+  },
+  "zephyr": {
+    "armor": [],
+    "weapons": ["melee"]
+  }
+}

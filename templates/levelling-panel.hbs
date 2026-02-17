@@ -1,0 +1,98 @@
+<section class="nimble-levelling__root">
+	<div class="nimble-levelling__header">
+		<i class="fa-solid fa-arrow-up-right-dots nimble-levelling__header-icon"></i>
+		<div class="nimble-levelling__header-info">
+			<h2 class="nimble-levelling__header-title">{{actorName}}</h2>
+			<p class="nimble-levelling__header-subtitle">{{className}} &mdash; Level {{level}}</p>
+		</div>
+	</div>
+
+	<div class="nimble-levelling__body">
+		{{!-- Features Section --}}
+		<div class="nimble-levelling__section">
+			<div class="nimble-levelling__section-header" data-action="openFeatures">
+				<span><i class="fa-solid fa-scroll"></i> Class Features</span>
+				<span class="nimble-levelling__section-badge">{{features.length}}</span>
+			</div>
+			<div class="nimble-levelling__section-body">
+				{{#if features.length}}
+					<div class="nimble-levelling__card-grid">
+						{{#each features}}
+							<div class="nimble-levelling__card {{#if this.alreadyOwned}}nimble-levelling__card--owned{{/if}}">
+								<img class="nimble-levelling__card-img" src="{{this.img}}" alt="{{this.name}}" />
+								<div class="nimble-levelling__card-content">
+									<div class="nimble-levelling__card-name">{{this.name}}</div>
+									<div class="nimble-levelling__card-meta">Level {{this.level}}</div>
+								</div>
+								{{#if this.alreadyOwned}}
+									<span class="nimble-levelling__card-owned-tag">Owned</span>
+								{{/if}}
+							</div>
+						{{/each}}
+					</div>
+				{{else}}
+					<div class="nimble-levelling__empty">No new features at this level.</div>
+				{{/if}}
+			</div>
+		</div>
+
+		{{!-- Spells Section --}}
+		{{#if hasSpellcasting}}
+		<div class="nimble-levelling__section">
+			<div class="nimble-levelling__section-header" data-action="openSpells">
+				<span><i class="fa-solid fa-hat-wizard"></i> Spells</span>
+				<span class="nimble-levelling__section-badge">{{spellCount}}</span>
+			</div>
+			<div class="nimble-levelling__section-body">
+				{{#if spellSchools.length}}
+					<div class="nimble-levelling__filter-bar">
+						{{#each spellSchools}}
+							<span class="nimble-levelling__filter-btn nimble-levelling__filter-btn--active">
+								<i class="{{this.icon}} nimble-levelling__school-icon--{{this.id}}"></i>
+								{{this.label}}
+							</span>
+						{{/each}}
+					</div>
+					<div class="nimble-levelling__notification">
+						<i class="fa-solid fa-circle-info"></i>
+						Max spell tier: {{maxTier}}
+					</div>
+				{{else}}
+					<div class="nimble-levelling__empty">No spell schools available yet.</div>
+				{{/if}}
+			</div>
+		</div>
+		{{/if}}
+
+		{{!-- Equipment Section --}}
+		<div class="nimble-levelling__section">
+			<div class="nimble-levelling__section-header" data-action="openEquipment">
+				<span><i class="fa-solid fa-shield-halved"></i> Equipment</span>
+				<span class="nimble-levelling__section-badge">{{equipmentCount}}</span>
+			</div>
+			<div class="nimble-levelling__section-body">
+				<div class="nimble-levelling__notification">
+					<i class="fa-solid fa-circle-info"></i>
+					Armor: {{proficiencySummary.armor}} &mdash; Weapons: {{proficiencySummary.weapons}}
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="nimble-levelling__actions">
+		<button type="button" class="nimble-levelling__btn" data-action="openFeatures">
+			<i class="fa-solid fa-scroll"></i> Features
+		</button>
+		{{#if hasSpellcasting}}
+		<button type="button" class="nimble-levelling__btn" data-action="openSpells">
+			<i class="fa-solid fa-hat-wizard"></i> Spells
+		</button>
+		{{/if}}
+		<button type="button" class="nimble-levelling__btn" data-action="openEquipment">
+			<i class="fa-solid fa-shield-halved"></i> Equipment
+		</button>
+		<button type="button" class="nimble-levelling__btn" data-action="closePanel">
+			<i class="fa-solid fa-xmark"></i> Close
+		</button>
+	</div>
+</section>
