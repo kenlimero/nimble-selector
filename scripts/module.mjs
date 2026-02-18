@@ -228,18 +228,17 @@ Hooks.once('ready', async () => {
 /* ---------------------------------------- */
 
 Hooks.on('getSceneControlButtons', (controls) => {
-	// In v13, controls is an array of control groups.
-	// We add our button to the "token" group (the default active group).
-	const tokenGroup = controls.find((c) => c.name === 'token');
+	// In v13, controls is an object keyed by group name (not an array).
+	const tokenGroup = controls.tokens;
 	if (!tokenGroup) return;
 
-	tokenGroup.tools.push({
+	tokenGroup.tools[MODULE_ID] = {
 		name: MODULE_ID,
 		title: 'Nimble Selector',
 		icon: 'fa-solid fa-arrow-up-right-dots',
 		button: true,
 		onClick: _openForControlledToken,
-	});
+	};
 });
 
 /* ---------------------------------------- */
