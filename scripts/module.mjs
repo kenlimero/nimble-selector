@@ -1,10 +1,10 @@
 import { MODULE_ID } from './utils/constants.mjs';
 import { DataProvider } from './data/DataProvider.mjs';
 import { CompendiumBrowser } from './core/CompendiumBrowser.mjs';
-import { LevellingOrchestrator } from './core/LevellingOrchestrator.mjs';
+import { SelectorOrchestrator } from './core/SelectorOrchestrator.mjs';
 
 /**
- * Nimble Levelling Module Entry Point
+ * Nimble Selector Module Entry Point
  *
  * Integration hooks:
  * - init: register settings + keybinding
@@ -44,12 +44,12 @@ function _getDocumentId(li) {
 }
 
 /**
- * Open the Nimble Levelling panel for the currently controlled token
+ * Open the Nimble Selector panel for the currently controlled token
  * or the user's default character.
  */
 function _openForControlledToken() {
 	if (!orchestrator) {
-		ui.notifications.warn('Nimble Levelling is still loading…');
+		ui.notifications.warn('Nimble Selector is still loading…');
 		return;
 	}
 	const token = canvas.tokens?.controlled?.[0];
@@ -93,7 +93,7 @@ function _findCharacterSheetClasses() {
 }
 
 /**
- * Patch character sheet classes so the "Nimble Levelling" button appears
+ * Patch character sheet classes so the "Nimble Selector" button appears
  * as a native window header control.
  *
  * Wraps _getHeaderControls() to inject our control at render time,
@@ -117,11 +117,11 @@ function _patchCharacterSheetControls() {
 		const original = owner._getHeaderControls;
 		owner._getHeaderControls = function () {
 			const controls = original.call(this);
-			if (!controls.some((c) => c.action === 'nimbleLevelling')) {
+			if (!controls.some((c) => c.action === 'nimbleSelector')) {
 				controls.push({
 					icon: 'fa-solid fa-arrow-up-right-dots',
-					label: 'Nimble Levelling',
-					action: 'nimbleLevelling',
+					label: 'Nimble Selector',
+					action: 'nimbleSelector',
 					ownership: 'OWNER',
 				});
 			}
@@ -132,10 +132,10 @@ function _patchCharacterSheetControls() {
 		let target = SheetClass;
 		while (target) {
 			if (Object.hasOwn(target, 'DEFAULT_OPTIONS') && target.DEFAULT_OPTIONS.actions) {
-				if (!target.DEFAULT_OPTIONS.actions.nimbleLevelling) {
-					target.DEFAULT_OPTIONS.actions.nimbleLevelling = function () {
+				if (!target.DEFAULT_OPTIONS.actions.nimbleSelector) {
+					target.DEFAULT_OPTIONS.actions.nimbleSelector = function () {
 						if (!orchestrator) {
-							ui.notifications.warn('Nimble Levelling is still loading…');
+							ui.notifications.warn('Nimble Selector is still loading…');
 							return;
 						}
 						orchestrator.openForActor(this.document);
@@ -156,12 +156,12 @@ function _patchCharacterSheetControls() {
 /* ---------------------------------------- */
 
 Hooks.once('init', () => {
-	console.log(`${MODULE_ID} | Initializing Nimble Levelling module`);
+	console.log(`${MODULE_ID} | Initializing Nimble Selector module`);
 
 	// ── Settings ──────────────────────────────
 	game.settings.register(MODULE_ID, 'autoOpenOnLevelUp', {
-		name: 'NIMBLE_LEVELLING.settings.autoOpenOnLevelUp',
-		hint: 'NIMBLE_LEVELLING.settings.autoOpenOnLevelUpHint',
+		name: 'NIMBLE_SELECTOR.settings.autoOpenOnLevelUp',
+		hint: 'NIMBLE_SELECTOR.settings.autoOpenOnLevelUpHint',
 		scope: 'client',
 		config: true,
 		type: Boolean,
@@ -169,8 +169,8 @@ Hooks.once('init', () => {
 	});
 
 	game.settings.register(MODULE_ID, 'autoSelectFeatures', {
-		name: 'NIMBLE_LEVELLING.settings.autoSelectFeatures',
-		hint: 'NIMBLE_LEVELLING.settings.autoSelectFeaturesHint',
+		name: 'NIMBLE_SELECTOR.settings.autoSelectFeatures',
+		hint: 'NIMBLE_SELECTOR.settings.autoSelectFeaturesHint',
 		scope: 'client',
 		config: true,
 		type: Boolean,
@@ -178,9 +178,9 @@ Hooks.once('init', () => {
 	});
 
 	// ── Keybinding (Shift+L) ─────────────────
-	game.keybindings.register(MODULE_ID, 'openLevelling', {
-		name: 'NIMBLE_LEVELLING.keybindings.openLevelling',
-		hint: 'NIMBLE_LEVELLING.keybindings.openLevellingHint',
+	game.keybindings.register(MODULE_ID, 'openSelector', {
+		name: 'NIMBLE_SELECTOR.keybindings.openSelector',
+		hint: 'NIMBLE_SELECTOR.keybindings.openSelectorHint',
 		editable: [{ key: 'KeyL', modifiers: ['Shift'] }],
 		onDown: () => {
 			_openForControlledToken();
@@ -202,7 +202,7 @@ Hooks.once('ready', async () => {
 
 		await Promise.all([dataProvider.load(), compendiumBrowser.initialize()]);
 
-		orchestrator = new LevellingOrchestrator();
+		orchestrator = new SelectorOrchestrator();
 
 		// Expose the orchestrator globally for macro / API usage
 		game.modules.get(MODULE_ID).api = {
@@ -219,7 +219,7 @@ Hooks.once('ready', async () => {
 		console.log(`${MODULE_ID} | Ready`);
 	} catch (err) {
 		console.error(`${MODULE_ID} | Failed to initialize:`, err);
-		ui.notifications.error('Nimble Levelling failed to load. Check the console (F12) for details.');
+		ui.notifications.error('Nimble Selector failed to load. Check the console (F12) for details.');
 	}
 });
 
@@ -235,7 +235,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
 
 	tokenGroup.tools.push({
 		name: MODULE_ID,
-		title: 'Nimble Levelling',
+		title: 'Nimble Selector',
 		icon: 'fa-solid fa-arrow-up-right-dots',
 		button: true,
 		onClick: _openForControlledToken,
@@ -304,7 +304,7 @@ Hooks.on('createItem', (item, options, userId) => {
 
 Hooks.on('getActorDirectoryEntryContext', (html, contextOptions) => {
 	contextOptions.push({
-		name: 'Nimble Levelling',
+		name: 'Nimble Selector',
 		icon: '<i class="fa-solid fa-arrow-up-right-dots"></i>',
 		condition: (li) => {
 			const id = _getDocumentId(li);

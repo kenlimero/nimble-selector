@@ -22,10 +22,10 @@ const SCHOOL_ICONS = {
 };
 
 /**
- * Main levelling panel that provides an overview and access to the
+ * Main selector panel that provides an overview and access to the
  * three sub-selectors: features, spells, and equipment.
  */
-class LevellingPanel extends HandlebarsApplicationMixin(ApplicationV2) {
+class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 	#actor;
 	#classIdentifier;
 	#subclassIdentifier;
@@ -45,9 +45,9 @@ class LevellingPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 
 	static DEFAULT_OPTIONS = {
 		id: `${MODULE_ID}-panel`,
-		classes: [MODULE_ID, 'nimble-levelling'],
+		classes: [MODULE_ID, 'nimble-selector'],
 		window: {
-			title: 'Nimble Levelling',
+			title: 'Nimble Selector',
 			icon: 'fa-solid fa-arrow-up-right-dots',
 			resizable: true,
 		},
@@ -56,16 +56,16 @@ class LevellingPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 			height: 'auto',
 		},
 		actions: {
-			openFeatures: LevellingPanel.#onOpenFeatures,
-			openSpells: LevellingPanel.#onOpenSpells,
-			openEquipment: LevellingPanel.#onOpenEquipment,
-			closePanel: LevellingPanel.#onClose,
+			openFeatures: SelectorPanel.#onOpenFeatures,
+			openSpells: SelectorPanel.#onOpenSpells,
+			openEquipment: SelectorPanel.#onOpenEquipment,
+			closePanel: SelectorPanel.#onClose,
 		},
 	};
 
 	static PARTS = {
 		panel: {
-			template: `${TEMPLATE_PATH}/levelling-panel.hbs`,
+			template: `${TEMPLATE_PATH}/selector-panel.hbs`,
 		},
 	};
 
@@ -182,4 +182,4 @@ class LevellingPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 	}
 }
 
-export { LevellingPanel };
+export { SelectorPanel };

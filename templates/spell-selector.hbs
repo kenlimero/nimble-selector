@@ -1,39 +1,39 @@
-<section class="nimble-levelling__root">
-	<div class="nimble-levelling__header">
-		<i class="fa-solid fa-hat-wizard nimble-levelling__header-icon"></i>
-		<div class="nimble-levelling__header-info">
-			<h2 class="nimble-levelling__header-title">Spell Selection</h2>
-			<p class="nimble-levelling__header-subtitle">{{className}} &mdash; Max Tier {{maxTier}}</p>
+<section class="nimble-selector__root">
+	<div class="nimble-selector__header">
+		<i class="fa-solid fa-hat-wizard nimble-selector__header-icon"></i>
+		<div class="nimble-selector__header-info">
+			<h2 class="nimble-selector__header-title">Spell Selection</h2>
+			<p class="nimble-selector__header-subtitle">{{className}} &mdash; Max Tier {{maxTier}}</p>
 		</div>
 	</div>
 
 	{{!-- School Filter --}}
-	<div class="nimble-levelling__filter-bar">
+	<div class="nimble-selector__filter-bar">
 		<button type="button"
-				class="nimble-levelling__filter-btn {{#unless activeSchool}}nimble-levelling__filter-btn--active{{/unless}}"
+				class="nimble-selector__filter-btn {{#unless activeSchool}}nimble-selector__filter-btn--active{{/unless}}"
 				data-action="filterSchool" data-school="">
 			All
 		</button>
 		{{#each schools}}
 			<button type="button"
-					class="nimble-levelling__filter-btn {{#if this.active}}nimble-levelling__filter-btn--active{{/if}}"
+					class="nimble-selector__filter-btn {{#if this.active}}nimble-selector__filter-btn--active{{/if}}"
 					data-action="filterSchool" data-school="{{this.id}}">
-				<i class="{{this.icon}} nimble-levelling__school-icon--{{this.id}}"></i>
+				<i class="{{this.icon}} nimble-selector__school-icon--{{this.id}}"></i>
 				{{this.label}}
 			</button>
 		{{/each}}
 	</div>
 
 	{{!-- Tier Filter --}}
-	<div class="nimble-levelling__category-tabs">
+	<div class="nimble-selector__category-tabs">
 		<button type="button"
-				class="nimble-levelling__category-tab {{#unless activeTier}}nimble-levelling__category-tab--active{{/unless}}"
+				class="nimble-selector__category-tab {{#unless activeTier}}nimble-selector__category-tab--active{{/unless}}"
 				data-action="filterTier" data-tier="">
 			All Tiers
 		</button>
 		{{#each availableTiers}}
 			<button type="button"
-					class="nimble-levelling__category-tab {{#if this.active}}nimble-levelling__category-tab--active{{/if}}"
+					class="nimble-selector__category-tab {{#if this.active}}nimble-selector__category-tab--active{{/if}}"
 					data-action="filterTier" data-tier="{{this.tier}}">
 				Tier {{this.tier}}
 			</button>
@@ -41,42 +41,42 @@
 	</div>
 
 	{{!-- Spell List --}}
-	<div class="nimble-levelling__scroll-area">
+	<div class="nimble-selector__scroll-area">
 		{{#if filteredSpells.length}}
-			<div class="nimble-levelling__card-grid">
+			<div class="nimble-selector__card-grid">
 				{{#each filteredSpells}}
-					<div class="nimble-levelling__card {{#if this.selected}}nimble-levelling__card--selected{{/if}} {{#if this.alreadyOwned}}nimble-levelling__card--owned{{/if}}"
+					<div class="nimble-selector__card {{#if this.selected}}nimble-selector__card--selected{{/if}} {{#if this.alreadyOwned}}nimble-selector__card--owned{{/if}}"
 						 data-action="toggleSpell" data-uuid="{{this.uuid}}">
-						<input type="checkbox" class="nimble-levelling__card-checkbox"
+						<input type="checkbox" class="nimble-selector__card-checkbox"
 							   {{#if this.selected}}checked{{/if}}
 							   {{#if this.alreadyOwned}}disabled{{/if}} />
-						<img class="nimble-levelling__card-img" src="{{this.img}}" alt="{{this.name}}" />
-						<div class="nimble-levelling__card-content">
-							<div class="nimble-levelling__card-name">{{this.name}}</div>
-							<div class="nimble-levelling__card-meta">
-								<i class="{{this.schoolIcon}} nimble-levelling__school-icon--{{this.school}}"></i>
+						<img class="nimble-selector__card-img" src="{{this.img}}" alt="{{this.name}}" />
+						<div class="nimble-selector__card-content">
+							<div class="nimble-selector__card-name">{{this.name}}</div>
+							<div class="nimble-selector__card-meta">
+								<i class="{{this.schoolIcon}} nimble-selector__school-icon--{{this.school}}"></i>
 								{{this.schoolLabel}}
-								<span class="nimble-levelling__spell-tier-badge nimble-levelling__spell-tier-badge--{{this.tierClass}}">
+								<span class="nimble-selector__spell-tier-badge nimble-selector__spell-tier-badge--{{this.tierClass}}">
 									{{this.tierLabel}}
 								</span>
 							</div>
 						</div>
 						{{#if this.alreadyOwned}}
-							<span class="nimble-levelling__card-owned-tag">Owned</span>
+							<span class="nimble-selector__card-owned-tag">Owned</span>
 						{{/if}}
 					</div>
 				{{/each}}
 			</div>
 		{{else}}
-			<div class="nimble-levelling__empty">No spells match the current filters.</div>
+			<div class="nimble-selector__empty">No spells match the current filters.</div>
 		{{/if}}
 	</div>
 
-	<div class="nimble-levelling__actions">
-		<button type="button" class="nimble-levelling__btn" data-action="cancel">
+	<div class="nimble-selector__actions">
+		<button type="button" class="nimble-selector__btn" data-action="cancel">
 			<i class="fa-solid fa-xmark"></i> Cancel
 		</button>
-		<button type="button" class="nimble-levelling__btn" data-action="confirm"
+		<button type="button" class="nimble-selector__btn" data-action="confirm"
 				{{#unless hasSelection}}disabled{{/unless}}>
 			<i class="fa-solid fa-check"></i> Grant Selected ({{selectedCount}})
 		</button>

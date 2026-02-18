@@ -1,41 +1,41 @@
-<section class="nimble-levelling__root">
-	<div class="nimble-levelling__header">
-		<i class="fa-solid fa-scroll nimble-levelling__header-icon"></i>
-		<div class="nimble-levelling__header-info">
-			<h2 class="nimble-levelling__header-title">Class Features</h2>
-			<p class="nimble-levelling__header-subtitle">{{className}} &mdash; Level {{fromLevel}}{{#if isRange}}&ndash;{{toLevel}}{{/if}}</p>
+<section class="nimble-selector__root">
+	<div class="nimble-selector__header">
+		<i class="fa-solid fa-scroll nimble-selector__header-icon"></i>
+		<div class="nimble-selector__header-info">
+			<h2 class="nimble-selector__header-title">Class Features</h2>
+			<p class="nimble-selector__header-subtitle">{{className}} &mdash; Level {{fromLevel}}{{#if isRange}}&ndash;{{toLevel}}{{/if}}</p>
 		</div>
 	</div>
 
-	<div class="nimble-levelling__bulk-actions">
-		<button type="button" class="nimble-levelling__btn nimble-levelling__btn--small" data-action="selectAll">
+	<div class="nimble-selector__bulk-actions">
+		<button type="button" class="nimble-selector__btn nimble-selector__btn--small" data-action="selectAll">
 			<i class="fa-solid fa-check-double"></i> Select All
 		</button>
-		<button type="button" class="nimble-levelling__btn nimble-levelling__btn--small" data-action="deselectAll">
+		<button type="button" class="nimble-selector__btn nimble-selector__btn--small" data-action="deselectAll">
 			<i class="fa-solid fa-xmark"></i> Deselect All
 		</button>
 	</div>
 
-	<div class="nimble-levelling__scroll-area">
+	<div class="nimble-selector__scroll-area">
 		{{#each levelGroups}}
-			<div class="nimble-levelling__level-group">
-				<div class="nimble-levelling__level-label">Level {{this.level}}</div>
-				<div class="nimble-levelling__card-grid">
+			<div class="nimble-selector__level-group">
+				<div class="nimble-selector__level-label">Level {{this.level}}</div>
+				<div class="nimble-selector__card-grid">
 					{{#each this.features}}
-						<div class="nimble-levelling__card {{#if this.selected}}nimble-levelling__card--selected{{/if}} {{#if this.alreadyOwned}}nimble-levelling__card--owned{{/if}}"
+						<div class="nimble-selector__card {{#if this.selected}}nimble-selector__card--selected{{/if}} {{#if this.alreadyOwned}}nimble-selector__card--owned{{/if}}"
 							 data-action="toggleFeature" data-uuid="{{this.uuid}}" data-name="{{this.name}}">
-							<input type="checkbox" class="nimble-levelling__card-checkbox"
+							<input type="checkbox" class="nimble-selector__card-checkbox"
 								   {{#if this.selected}}checked{{/if}}
 								   {{#if this.alreadyOwned}}disabled{{/if}} />
-							<img class="nimble-levelling__card-img" src="{{this.img}}" alt="{{this.name}}" />
-							<div class="nimble-levelling__card-content">
-								<div class="nimble-levelling__card-name">{{this.name}}</div>
-								<div class="nimble-levelling__card-meta">
+							<img class="nimble-selector__card-img" src="{{this.img}}" alt="{{this.name}}" />
+							<div class="nimble-selector__card-content">
+								<div class="nimble-selector__card-name">{{this.name}}</div>
+								<div class="nimble-selector__card-meta">
 									{{#if this.matched}}Compendium match{{else}}Not found in compendium{{/if}}
 								</div>
 							</div>
 							{{#if this.alreadyOwned}}
-								<span class="nimble-levelling__card-owned-tag">Owned</span>
+								<span class="nimble-selector__card-owned-tag">Owned</span>
 							{{/if}}
 						</div>
 					{{/each}}
@@ -44,15 +44,15 @@
 		{{/each}}
 
 		{{#unless levelGroups.length}}
-			<div class="nimble-levelling__empty">No features available for the selected levels.</div>
+			<div class="nimble-selector__empty">No features available for the selected levels.</div>
 		{{/unless}}
 	</div>
 
-	<div class="nimble-levelling__actions">
-		<button type="button" class="nimble-levelling__btn" data-action="cancel">
+	<div class="nimble-selector__actions">
+		<button type="button" class="nimble-selector__btn" data-action="cancel">
 			<i class="fa-solid fa-xmark"></i> Cancel
 		</button>
-		<button type="button" class="nimble-levelling__btn" data-action="confirm"
+		<button type="button" class="nimble-selector__btn" data-action="confirm"
 				{{#unless hasSelection}}disabled{{/unless}}>
 			<i class="fa-solid fa-check"></i> Grant Selected ({{selectedCount}})
 		</button>

@@ -44,7 +44,7 @@ class CompendiumBrowser {
 	async #indexFeatures() {
 		const pack = game.packs.get(PACK_NAMES.classFeatures);
 		if (!pack) {
-			console.warn(`nimble-levelling | Pack ${PACK_NAMES.classFeatures} not found`);
+			console.warn(`nimble-selector | Pack ${PACK_NAMES.classFeatures} not found`);
 			return;
 		}
 
@@ -71,7 +71,7 @@ class CompendiumBrowser {
 	async #indexSpells() {
 		const pack = game.packs.get(PACK_NAMES.spells);
 		if (!pack) {
-			console.warn(`nimble-levelling | Pack ${PACK_NAMES.spells} not found`);
+			console.warn(`nimble-selector | Pack ${PACK_NAMES.spells} not found`);
 			return;
 		}
 
@@ -99,7 +99,7 @@ class CompendiumBrowser {
 	async #indexItems() {
 		const pack = game.packs.get(PACK_NAMES.items);
 		if (!pack) {
-			console.warn(`nimble-levelling | Pack ${PACK_NAMES.items} not found`);
+			console.warn(`nimble-selector | Pack ${PACK_NAMES.items} not found`);
 			return;
 		}
 
@@ -213,7 +213,7 @@ class CompendiumBrowser {
 		try {
 			return await fromUuid(uuid);
 		} catch (e) {
-			console.error(`nimble-levelling | Failed to resolve UUID: ${uuid}`, e);
+			console.error(`nimble-selector | Failed to resolve UUID: ${uuid}`, e);
 			return null;
 		}
 	}

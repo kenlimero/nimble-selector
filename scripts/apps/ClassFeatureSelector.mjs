@@ -21,7 +21,7 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 
 	static DEFAULT_OPTIONS = {
 		id: `${MODULE_ID}-feature-selector`,
-		classes: [MODULE_ID, 'nimble-levelling'],
+		classes: [MODULE_ID, 'nimble-selector'],
 		window: {
 			title: 'Class Features',
 			icon: 'fa-solid fa-scroll',

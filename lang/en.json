@@ -1,17 +1,17 @@
 {
-	"NIMBLE_LEVELLING": {
+	"NIMBLE_SELECTOR": {
 		"keybindings": {
-			"openLevelling": "Open Nimble Levelling",
-			"openLevellingHint": "Opens the Nimble Levelling panel for the selected token or default character."
+			"openSelector": "Open Nimble Selector",
+			"openSelectorHint": "Opens the Nimble Selector panel for the selected token or default character."
 		},
 		"settings": {
 			"autoOpenOnLevelUp": "Auto-open on Level Up",
-			"autoOpenOnLevelUpHint": "Automatically open the Levelling panel when a character levels up.",
+			"autoOpenOnLevelUpHint": "Automatically open the selector panel when a character levels up.",
 			"autoSelectFeatures": "Auto-select Features",
 			"autoSelectFeaturesHint": "Automatically pre-select new class features that are not yet on the character sheet."
 		},
 		"panel": {
-			"title": "Nimble Levelling",
+			"title": "Nimble Selector",
 			"classFeatures": "Class Features",
 			"spells": "Spells",
 			"equipment": "Equipment",
@@ -59,7 +59,7 @@
 			"granted": "Granted {count} item(s) to {name}.",
 			"noSelection": "No items selected. Open a selector and make your choices first.",
 			"noClass": "This character has no class assigned.",
-			"loading": "Nimble Levelling is still loading..."
+			"loading": "Nimble Selector is still loading..."
 		}
 	}
 }

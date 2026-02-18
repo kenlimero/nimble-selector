@@ -1,4 +1,4 @@
-export const MODULE_ID = 'nimble-levelling';
+export const MODULE_ID = 'nimble-selector';
 
 export const PACK_NAMES = {
 	classFeatures: 'nimble.nimble-class-features',

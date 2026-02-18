@@ -1,22 +1,22 @@
-<section class="nimble-levelling__root">
-	<div class="nimble-levelling__header">
-		<i class="fa-solid fa-shield-halved nimble-levelling__header-icon"></i>
-		<div class="nimble-levelling__header-info">
-			<h2 class="nimble-levelling__header-title">Equipment Selection</h2>
-			<p class="nimble-levelling__header-subtitle">{{className}} &mdash; {{proficiencySummary}}</p>
+<section class="nimble-selector__root">
+	<div class="nimble-selector__header">
+		<i class="fa-solid fa-shield-halved nimble-selector__header-icon"></i>
+		<div class="nimble-selector__header-info">
+			<h2 class="nimble-selector__header-title">Equipment Selection</h2>
+			<p class="nimble-selector__header-subtitle">{{className}} &mdash; {{proficiencySummary}}</p>
 		</div>
 	</div>
 
 	{{!-- Category Filter --}}
-	<div class="nimble-levelling__category-tabs">
+	<div class="nimble-selector__category-tabs">
 		<button type="button"
-				class="nimble-levelling__category-tab {{#unless activeCategory}}nimble-levelling__category-tab--active{{/unless}}"
+				class="nimble-selector__category-tab {{#unless activeCategory}}nimble-selector__category-tab--active{{/unless}}"
 				data-action="filterCategory" data-category="">
 			All
 		</button>
 		{{#each categories}}
 			<button type="button"
-					class="nimble-levelling__category-tab {{#if this.active}}nimble-levelling__category-tab--active{{/if}}"
+					class="nimble-selector__category-tab {{#if this.active}}nimble-selector__category-tab--active{{/if}}"
 					data-action="filterCategory" data-category="{{this.id}}">
 				<i class="{{this.icon}}"></i> {{this.label}}
 			</button>
@@ -24,32 +24,32 @@
 	</div>
 
 	{{!-- Equipment List --}}
-	<div class="nimble-levelling__scroll-area">
+	<div class="nimble-selector__scroll-area">
 		{{#if filteredEquipment.length}}
-			<div class="nimble-levelling__card-grid">
+			<div class="nimble-selector__card-grid">
 				{{#each filteredEquipment}}
-					<div class="nimble-levelling__card {{#if this.selected}}nimble-levelling__card--selected{{/if}}"
+					<div class="nimble-selector__card {{#if this.selected}}nimble-selector__card--selected{{/if}}"
 						 data-action="toggleEquipment" data-uuid="{{this.uuid}}">
-						<input type="checkbox" class="nimble-levelling__card-checkbox"
+						<input type="checkbox" class="nimble-selector__card-checkbox"
 							   {{#if this.selected}}checked{{/if}} />
-						<img class="nimble-levelling__card-img" src="{{this.img}}" alt="{{this.name}}" />
-						<div class="nimble-levelling__card-content">
-							<div class="nimble-levelling__card-name">{{this.name}}</div>
-							<div class="nimble-levelling__card-meta">{{this.typeLabel}}</div>
+						<img class="nimble-selector__card-img" src="{{this.img}}" alt="{{this.name}}" />
+						<div class="nimble-selector__card-content">
+							<div class="nimble-selector__card-name">{{this.name}}</div>
+							<div class="nimble-selector__card-meta">{{this.typeLabel}}</div>
 						</div>
 					</div>
 				{{/each}}
 			</div>
 		{{else}}
-			<div class="nimble-levelling__empty">No equipment matches the current filter.</div>
+			<div class="nimble-selector__empty">No equipment matches the current filter.</div>
 		{{/if}}
 	</div>
 
-	<div class="nimble-levelling__actions">
-		<button type="button" class="nimble-levelling__btn" data-action="cancel">
+	<div class="nimble-selector__actions">
+		<button type="button" class="nimble-selector__btn" data-action="cancel">
 			<i class="fa-solid fa-xmark"></i> Cancel
 		</button>
-		<button type="button" class="nimble-levelling__btn" data-action="confirm"
+		<button type="button" class="nimble-selector__btn" data-action="confirm"
 				{{#unless hasSelection}}disabled{{/unless}}>
 			<i class="fa-solid fa-check"></i> Grant Selected ({{selectedCount}})
 		</button>

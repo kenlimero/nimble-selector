@@ -51,7 +51,7 @@ class DataProvider {
 	async #fetchJSON(filename) {
 		const response = await fetch(`${DATA_PATH}/${filename}`);
 		if (!response.ok) {
-			console.error(`nimble-levelling | Failed to load ${filename}: ${response.statusText}`);
+			console.error(`nimble-selector | Failed to load ${filename}: ${response.statusText}`);
 			return {};
 		}
 		return response.json();

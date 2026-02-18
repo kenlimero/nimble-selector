@@ -1,15 +1,15 @@
 import { DataProvider } from '../data/DataProvider.mjs';
 import { CompendiumBrowser } from './CompendiumBrowser.mjs';
-import { LevellingPanel } from '../apps/LevellingPanel.mjs';
+import { SelectorPanel } from '../apps/SelectorPanel.mjs';
 import { ClassFeatureSelector } from '../apps/ClassFeatureSelector.mjs';
 import { SpellSelector } from '../apps/SpellSelector.mjs';
 import { EquipmentSelector } from '../apps/EquipmentSelector.mjs';
 
 /**
- * Coordinates the initialization and opening of the levelling UI.
+ * Coordinates the initialization and opening of the selector UI.
  * Acts as the main entry point for module interactions.
  */
-class LevellingOrchestrator {
+class SelectorOrchestrator {
 	#dataProvider;
 	#compendiumBrowser;
 
@@ -60,7 +60,7 @@ class LevellingOrchestrator {
 	}
 
 	/**
-	 * Open the main levelling panel for an actor.
+	 * Open the main selector panel for an actor.
 	 * @param {Actor} actor
 	 */
 	async openForActor(actor) {
@@ -72,7 +72,7 @@ class LevellingOrchestrator {
 			return;
 		}
 
-		const panel = new LevellingPanel(
+		const panel = new SelectorPanel(
 			actor,
 			info.classIdentifier,
 			info.level,
@@ -83,7 +83,7 @@ class LevellingOrchestrator {
 	}
 
 	/**
-	 * Open the levelling panel for a specific level-up range.
+	 * Open the selector panel for a specific level-up range.
 	 * @param {Actor} actor
 	 * @param {number} fromLevel
 	 * @param {number} toLevel
@@ -97,7 +97,7 @@ class LevellingOrchestrator {
 			return;
 		}
 
-		const panel = new LevellingPanel(
+		const panel = new SelectorPanel(
 			actor,
 			info.classIdentifier,
 			toLevel,
@@ -159,4 +159,4 @@ class LevellingOrchestrator {
 
 }
 
-export { LevellingOrchestrator };
+export { SelectorOrchestrator };

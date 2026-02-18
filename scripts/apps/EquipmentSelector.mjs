@@ -28,7 +28,7 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 
 	static DEFAULT_OPTIONS = {
 		id: `${MODULE_ID}-equipment-selector`,
-		classes: [MODULE_ID, 'nimble-levelling'],
+		classes: [MODULE_ID, 'nimble-selector'],
 		window: {
 			title: 'Equipment Selection',
 			icon: 'fa-solid fa-shield-halved',

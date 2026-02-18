@@ -37,7 +37,7 @@ class SpellSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 
 	static DEFAULT_OPTIONS = {
 		id: `${MODULE_ID}-spell-selector`,
-		classes: [MODULE_ID, 'nimble-levelling'],
+		classes: [MODULE_ID, 'nimble-selector'],
 		window: {
 			title: 'Spell Selection',
 			icon: 'fa-solid fa-hat-wizard',

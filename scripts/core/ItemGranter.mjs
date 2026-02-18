@@ -62,7 +62,7 @@ class ItemGranter {
 	async #prepareItemFromUuid(uuid) {
 		const sourceItem = await this.#compendiumBrowser.getFullDocument(uuid);
 		if (!sourceItem) {
-			console.warn(`nimble-levelling | Could not resolve item: ${uuid}`);
+			console.warn(`nimble-selector | Could not resolve item: ${uuid}`);
 			return null;
 		}
 
