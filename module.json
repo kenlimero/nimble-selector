@@ -2,7 +2,7 @@
   "id": "nimble-selector",
   "title": "Nimble Selector",
   "description": "Automates class feature, spell, and equipment selection for the Nimble v2 system.",
-  "version": "0.5.0",
+  "version": "0.5",
   "compatibility": {
     "minimum": "13",
     "verified": "13",
