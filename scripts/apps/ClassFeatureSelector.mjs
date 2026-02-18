@@ -17,6 +17,7 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 	#features = [];
 	#selectedUuids = new Set();
 	#initialSelectionDone = false;
+	#scrollTop = 0;
 	#resolver = new ClassFeatureResolver();
 	#granter = new ItemGranter();
 
@@ -105,6 +106,16 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		};
 	}
 
+	_onRender(context, options) {
+		const scrollArea = this.element.querySelector('.nimble-selector__scroll-area');
+		if (scrollArea) scrollArea.scrollTop = this.#scrollTop;
+	}
+
+	#saveScrollPosition() {
+		const scrollArea = this.element?.querySelector('.nimble-selector__scroll-area');
+		if (scrollArea) this.#scrollTop = scrollArea.scrollTop;
+	}
+
 	static #onToggleFeature(event, target) {
 		const uuid = target.dataset.uuid;
 		if (!uuid) return;
@@ -118,6 +129,7 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		} else {
 			this.#selectedUuids.add(uuid);
 		}
+		this.#saveScrollPosition();
 		this.render();
 	}
 
@@ -127,11 +139,13 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 				this.#selectedUuids.add(f.uuid);
 			}
 		}
+		this.#saveScrollPosition();
 		this.render();
 	}
 
 	static #onDeselectAll() {
 		this.#selectedUuids.clear();
+		this.#saveScrollPosition();
 		this.render();
 	}
 
