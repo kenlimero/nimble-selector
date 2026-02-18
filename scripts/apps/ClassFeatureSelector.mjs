@@ -16,6 +16,7 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 	#toLevel;
 	#features = [];
 	#selectedUuids = new Set();
+	#initialSelectionDone = false;
 	#resolver = new ClassFeatureResolver();
 	#granter = new ItemGranter();
 
@@ -65,11 +66,14 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 
 		this.#features = this.#resolver.markOwnedFeatures(this.#actor, this.#features);
 
-		// Auto-select features not already owned
-		for (const f of this.#features) {
-			if (!f.alreadyOwned && f.matched) {
-				this.#selectedUuids.add(f.uuid);
+		// Auto-select features not already owned (only on first render)
+		if (!this.#initialSelectionDone) {
+			for (const f of this.#features) {
+				if (!f.alreadyOwned && f.matched) {
+					this.#selectedUuids.add(f.uuid);
+				}
 			}
+			this.#initialSelectionDone = true;
 		}
 
 		// Group by level

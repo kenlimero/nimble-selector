@@ -1,0 +1,203 @@
+{
+  "berserker": {
+    "Savage Arsenal": [
+      "Death Blow",
+      "Deathless Rage",
+      "Eager for Battle",
+      "Into the Fray",
+      "MORE BLOOD!",
+      "Mighty Endurance",
+      "Rampage",
+      "Swift Fury",
+      "Thunderous Steps",
+      "Unstoppable Force",
+      "Whirlwind",
+      "You're Next!"
+    ]
+  },
+  "the-cheat": {
+    "Underhanded Abilities": [
+      "\"Creative\" Accounting",
+      "Exploit Weakness",
+      "Feinting Attack",
+      "How'd YOU get here?!",
+      "I'm Outta Here!",
+      "Misdirection",
+      "Steal Tempo",
+      "Sunder Armor (Heavy)",
+      "Sunder Armor (Medium)",
+      "Trickshot"
+    ]
+  },
+  "commander": {
+    "Commander's Orders": [
+      "Coordinated Strike!",
+      "Face Me!",
+      "Hold the Line!",
+      "I Can Do This ALL DAY!",
+      "Move it! Move it!",
+      "Reposition!"
+    ],
+    "Combat Tactics": [
+      "Commanding Presence",
+      "Heavy Strike",
+      "Inerrant Strike.",
+      "Lunging Strike",
+      "Sweeping Strike"
+    ],
+    "Weapon Mastery": [
+      "Bludgeoning",
+      "Piercing",
+      "Slashing"
+    ]
+  },
+  "hexbinder": {
+    "Afflictions & Mystic Marks": [
+      "Bramble Mark",
+      "Brittle",
+      "Broom Flight",
+      "Coven",
+      "Dimmed",
+      "Doomed",
+      "Enfeebled",
+      "Frenzied",
+      "Mark of Protection",
+      "Pact of Enmity",
+      "Pestilent",
+      "Sigil of Journey",
+      "Sigil of Root",
+      "Sundered",
+      "Withered",
+      "Word of Decay"
+    ]
+  },
+  "hunter": {
+    "Thrill of the Hunt": [
+      "Addling Arrow",
+      "Come Get Some!",
+      "Decoy",
+      "Fleet Feet",
+      "Grease Trap",
+      "Hail of Arrows",
+      "Heavy Shot",
+      "Incendiary Shot",
+      "Multishot",
+      "Pinning Shot",
+      "Sharpshooter",
+      "Snare Trap",
+      "Vital Shot",
+      "Wild Instinct"
+    ]
+  },
+  "mage": {
+    "Spellshaper": [
+      "Dimensional Compression",
+      "Echo Casting",
+      "Elemental Destruction",
+      "Elemental Transmutation",
+      "Extra-Dimensional Vision",
+      "Methodical Spellweaver",
+      "Precise Casting",
+      "Stretch Time"
+    ]
+  },
+  "oathsworn": {
+    "Sacred Decrees": [
+      "Blinding Aura",
+      "Courage!",
+      "Explosive Judgment",
+      "Improved Aura",
+      "Radiant Aura",
+      "Reliable Justice",
+      "Shining Mandate",
+      "Stand Fast, Friends!",
+      "Unstoppable Protector",
+      "Well Armored"
+    ]
+  },
+  "shadowmancer": {
+    "Invocations": [
+      "Abhorrent Speech",
+      "Armor of Shadows",
+      "Beguiling Influence",
+      "Blood Sight",
+      "Devoted Acolyte",
+      "Eldritch Sense",
+      "Fiendish Boon",
+      "Gaze of Two Minds",
+      "Hungering Shadows",
+      "Knowledge from Beyond",
+      "My Favored Pet",
+      "One with Shadows",
+      "Repelling Blast",
+      "Shadow Magus",
+      "Shadow Rush",
+      "Shadow Spear",
+      "Shadow Warp",
+      "Swarming Shadows",
+      "Vengeful Blast",
+      "Voice of the Dark",
+      "Whispers of the Grave"
+    ]
+  },
+  "shepherd": {
+    "Sacred Grace": [
+      "Assist Me, My Friend!",
+      "Empowered Companion",
+      "Guiding Spirit",
+      "Hasty Companion",
+      "Illuminate Soul",
+      "Light Bearer",
+      "Not Beyond MY Reach",
+      "Vengeful Spirit"
+    ]
+  },
+  "songweaver": {
+    "Lyrical Weaponry": [
+      "Heroic Ballad",
+      "Inspiring Anthem",
+      "Not My Beautiful Faaace!",
+      "Rhapsody of the Normal",
+      "Song of Domination"
+    ],
+    "A \"People\" Person": [
+      "Gran Gran (NOT a hag)",
+      "Linos, the Everfriendly",
+      "Mal, the Malevolent Imp",
+      "Stompy"
+    ]
+  },
+  "stormshifter": {
+    "Direbeast Form": [
+      "Beast of Nightmares",
+      "Beast of the Pack",
+      "Fearsome Beast"
+    ],
+    "Chimeric Boon": [
+      "Beast of the Sea",
+      "Climber",
+      "Earthwalker",
+      "Fleet Footed",
+      "Keen Senses",
+      "Leader of the Pack",
+      "Phasebeast",
+      "Prehensile Tail",
+      "Winged"
+    ]
+  },
+  "zephyr": {
+    "Martial Master": [
+      "Airshift",
+      "Blur",
+      "Bodily Discipline",
+      "Enduring Soul",
+      "I Jump On His Back!",
+      "Kinetic Barrage",
+      "Mighty Soul",
+      "Quickstrike",
+      "Use Momentum",
+      "Vital Rejuvenation",
+      "Windstrider"
+    ]
+  }
+}
