@@ -126,14 +126,23 @@ class CompendiumBrowser {
 	 */
 	findFeaturesByName(featureNames, classIdentifier) {
 		const results = [];
+		const normalizedClass = this.#normalizeString(classIdentifier);
 
 		for (const name of featureNames) {
 			const key = this.#normalizeString(name);
-			const candidates = this.#featureIndex.get(key) ?? [];
+			let candidates = this.#featureIndex.get(key) ?? [];
+
+			// If no match and name has a numeric suffix like (2), (3), try the base name
+			if (candidates.length === 0) {
+				const baseKey = this.#stripNumericSuffix(key);
+				if (baseKey !== key) {
+					candidates = this.#featureIndex.get(baseKey) ?? [];
+				}
+			}
 
 			// Prefer exact class match
 			let match = candidates.find(
-				(c) => this.#normalizeString(c.class) === this.#normalizeString(classIdentifier),
+				(c) => this.#normalizeString(c.class) === normalizedClass,
 			);
 
 			// Fall back to any match
@@ -220,6 +229,10 @@ class CompendiumBrowser {
 
 	#normalizeString(str) {
 		return String(str ?? '').toLowerCase().trim().replace(/['']/g, "'");
+	}
+
+	#stripNumericSuffix(str) {
+		return str.replace(/\s*\(\d+\)$/, '').trim();
 	}
 }
 
