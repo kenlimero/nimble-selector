@@ -9,6 +9,7 @@ class DataProvider {
 	static #instance = null;
 
 	#classFeatures = null;
+	#selectableFeatures = null;
 	#spellSchools = null;
 	#spellTiers = null;
 	#equipmentProficiencies = null;
@@ -34,14 +35,16 @@ class DataProvider {
 	async load() {
 		if (this.#loaded) return;
 
-		const [classFeatures, spellSchools, spellTiers, equipmentProficiencies] = await Promise.all([
+		const [classFeatures, selectableFeatures, spellSchools, spellTiers, equipmentProficiencies] = await Promise.all([
 			this.#fetchJSON('class-features.json'),
+			this.#fetchJSON('class-selectable-features.json'),
 			this.#fetchJSON('spell-schools.json'),
 			this.#fetchJSON('spell-tiers.json'),
 			this.#fetchJSON('equipment-proficiencies.json'),
 		]);
 
 		this.#classFeatures = classFeatures;
+		this.#selectableFeatures = selectableFeatures;
 		this.#spellSchools = spellSchools;
 		this.#spellTiers = spellTiers;
 		this.#equipmentProficiencies = equipmentProficiencies;
@@ -49,12 +52,17 @@ class DataProvider {
 	}
 
 	async #fetchJSON(filename) {
-		const response = await fetch(`${DATA_PATH}/${filename}`);
-		if (!response.ok) {
-			console.error(`nimble-selector | Failed to load ${filename}: ${response.statusText}`);
+		try {
+			const response = await fetch(`${DATA_PATH}/${filename}`);
+			if (!response.ok) {
+				console.error(`nimble-selector | Failed to load ${filename}: ${response.statusText}`);
+				return {};
+			}
+			return await response.json();
+		} catch (err) {
+			console.error(`nimble-selector | Error loading ${filename}:`, err);
 			return {};
 		}
-		return response.json();
 	}
 
 	/**
@@ -97,6 +105,16 @@ class DataProvider {
 			}
 		}
 		return result;
+	}
+
+	/**
+	 * Get selectable options for a feature if it is a selectable feature group.
+	 * @param {string} classIdentifier - e.g. "berserker", "hunter"
+	 * @param {string} featureName - e.g. "Thrill of the Hunt"
+	 * @returns {string[]|null} Array of option names, or null if not selectable
+	 */
+	getSelectableOptions(classIdentifier, featureName) {
+		return this.#selectableFeatures?.[classIdentifier]?.[featureName] ?? null;
 	}
 
 	/**

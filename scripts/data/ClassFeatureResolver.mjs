@@ -33,7 +33,18 @@ class ClassFeatureResolver {
 
 		const results = [];
 		for (const [level, featureNames] of featuresByLevel) {
-			const matches = this.#compendiumBrowser.findFeaturesByName(featureNames, classIdentifier);
+			// Expand selectable feature groups into their individual options
+			const expandedNames = [];
+			for (const name of featureNames) {
+				const options = this.#dataProvider.getSelectableOptions(classIdentifier, name);
+				if (options) {
+					expandedNames.push(...options);
+				} else {
+					expandedNames.push(name);
+				}
+			}
+
+			const matches = this.#compendiumBrowser.findFeaturesByName(expandedNames, classIdentifier);
 			for (const match of matches) {
 				results.push({ ...match, level });
 			}

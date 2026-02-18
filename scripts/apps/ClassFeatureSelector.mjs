@@ -16,6 +16,8 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 	#toLevel;
 	#features = [];
 	#selectedUuids = new Set();
+	#initialSelectionDone = false;
+	#scrollTop = 0;
 	#resolver = new ClassFeatureResolver();
 	#granter = new ItemGranter();
 
@@ -65,11 +67,14 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 
 		this.#features = this.#resolver.markOwnedFeatures(this.#actor, this.#features);
 
-		// Auto-select features not already owned
-		for (const f of this.#features) {
-			if (!f.alreadyOwned && f.matched) {
-				this.#selectedUuids.add(f.uuid);
+		// Auto-select features not already owned (only on first render)
+		if (!this.#initialSelectionDone) {
+			for (const f of this.#features) {
+				if (!f.alreadyOwned && f.matched) {
+					this.#selectedUuids.add(f.uuid);
+				}
 			}
+			this.#initialSelectionDone = true;
 		}
 
 		// Group by level
@@ -101,6 +106,16 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		};
 	}
 
+	_onRender(context, options) {
+		const scrollArea = this.element.querySelector('.nimble-selector__scroll-area');
+		if (scrollArea) scrollArea.scrollTop = this.#scrollTop;
+	}
+
+	#saveScrollPosition() {
+		const scrollArea = this.element?.querySelector('.nimble-selector__scroll-area');
+		if (scrollArea) this.#scrollTop = scrollArea.scrollTop;
+	}
+
 	static #onToggleFeature(event, target) {
 		const uuid = target.dataset.uuid;
 		if (!uuid) return;
@@ -114,6 +129,7 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		} else {
 			this.#selectedUuids.add(uuid);
 		}
+		this.#saveScrollPosition();
 		this.render();
 	}
 
@@ -123,11 +139,13 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 				this.#selectedUuids.add(f.uuid);
 			}
 		}
+		this.#saveScrollPosition();
 		this.render();
 	}
 
 	static #onDeselectAll() {
 		this.#selectedUuids.clear();
+		this.#saveScrollPosition();
 		this.render();
 	}
 

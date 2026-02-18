@@ -4,7 +4,7 @@
       "1": ["Rage", "That all you got?!"],
       "2": ["Intensifying Fury", "One with the Ancients"],
       "3": ["Bloodlust"],
-      "4": ["Enduring Rage"],
+      "4": ["Enduring Rage", "Savage Arsenal"],
       "5": ["Rage (2)"],
       "6": ["Intensifying Fury (2)"],
       "9": ["Intensifying Fury (3)"],
@@ -33,6 +33,7 @@
       "1": ["Sneak Attack", "Vicious Opportunist"],
       "2": ["Cheat"],
       "3": ["Sneak Attack (2)", "Thieves' Cant"],
+      "4": ["Underhanded Abilities"],
       "5": ["Twist the Blade", "Quick Read"],
       "6": ["THAT'S Not What Happened!"],
       "7": ["Sneak Attack (3)"],
@@ -156,7 +157,7 @@
     "base": {
       "1": ["Radiant Judgment", "Lay on Hands"],
       "2": ["Mana and Unlock Radiant Spellcasting", "Zealot", "Paragon of Virtue"],
-      "3": ["Radiant Judgment (2)"],
+      "3": ["Radiant Judgment (2)", "Sacred Decrees"],
       "4": ["My Life, for My Friends"],
       "5": ["Radiant Judgment (3)"],
       "8": ["Radiant Judgment (4)"],
@@ -193,6 +194,7 @@
       "3": ["The Pact is Sealed"],
       "4": ["A Gift from the Master"],
       "6": ["Shadowmastery"],
+      "8": ["Invocations"],
       "12": ["Greedy Pact"],
       "17": ["Dire Shadows"],
       "20": ["Eldritch Usurper"]
