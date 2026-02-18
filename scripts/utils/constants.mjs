@@ -12,13 +12,13 @@ export const TEMPLATE_PATH = `modules/${MODULE_ID}/templates`;
 
 export const DATA_PATH = `modules/${MODULE_ID}/data`;
 
-export const SPELL_SCHOOL_COLORS = {
-	fire: '#e74c3c',
-	ice: '#3498db',
-	lightning: '#f1c40f',
-	necrotic: '#8e44ad',
-	radiant: '#f39c12',
-	wind: '#1abc9c',
-	secret: '#7f8c8d',
-	utility: '#95a5a6',
+export const SCHOOL_ICONS = {
+	fire: 'fa-solid fa-fire-flame-curved',
+	ice: 'fa-solid fa-snowflake',
+	lightning: 'fa-solid fa-bolt-lightning',
+	necrotic: 'fa-solid fa-skull',
+	radiant: 'fa-solid fa-sun',
+	wind: 'fa-solid fa-wind',
+	secret: 'fa-solid fa-eye-slash',
+	utility: 'fa-solid fa-toolbox',
 };

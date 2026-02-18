@@ -124,11 +124,6 @@
 	background: hsla(293, 10%, 35%, 0.05);
 }
 
-.nimble-selector__card--disabled {
-	opacity: 0.5;
-	pointer-events: none;
-}
-
 .nimble-selector__card--owned {
 	opacity: 0.6;
 	border-style: dashed;
@@ -292,16 +287,6 @@
 
 .nimble-selector__btn:hover {
 	box-shadow: var(--nimble-box-shadow, 0 0 6px hsla(0, 0%, 0%, 0.2));
-}
-
-.nimble-selector__btn--primary {
-	background: var(--nimble-navigation-background-color, hsl(0, 0%, 24%));
-	color: var(--nimble-light-text-color, hsl(38, 38%, 94%));
-	border-color: var(--nimble-navigation-background-color, hsl(0, 0%, 24%));
-}
-
-.nimble-selector__btn--primary:hover {
-	background: hsl(0, 0%, 30%);
 }
 
 .nimble-selector__btn--small {

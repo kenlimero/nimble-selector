@@ -1,21 +1,10 @@
-import { MODULE_ID, TEMPLATE_PATH, SPELL_SCHOOL_COLORS } from '../utils/constants.mjs';
+import { MODULE_ID, TEMPLATE_PATH, SCHOOL_ICONS } from '../utils/constants.mjs';
 import { SpellSchoolResolver } from '../data/SpellSchoolResolver.mjs';
 import { SpellTierResolver } from '../data/SpellTierResolver.mjs';
 import { CompendiumBrowser } from '../core/CompendiumBrowser.mjs';
 import { ItemGranter } from '../core/ItemGranter.mjs';
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
-
-const SCHOOL_ICONS = {
-	fire: 'fa-solid fa-fire-flame-curved',
-	ice: 'fa-solid fa-snowflake',
-	lightning: 'fa-solid fa-bolt-lightning',
-	necrotic: 'fa-solid fa-skull',
-	radiant: 'fa-solid fa-sun',
-	wind: 'fa-solid fa-wind',
-	secret: 'fa-solid fa-eye-slash',
-	utility: 'fa-solid fa-toolbox',
-};
 
 /**
  * Application for selecting and granting spells to a character.
@@ -28,6 +17,7 @@ class SpellSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 	#level;
 	#allSpells = [];
 	#selectedUuids = new Set();
+	#ownedSpellKeys = new Set();
 	#activeSchool = '';
 	#activeTier = null;
 	#schoolResolver = new SpellSchoolResolver();
@@ -120,22 +110,21 @@ class SpellSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 			filteredSpells = filteredSpells.filter((s) => s.tier === this.#activeTier);
 		}
 
-		// Detect already-owned spells on the actor
-		const ownedSpellNames = new Set();
-		const ownedSpellSources = new Set();
+		// Detect already-owned spells on the actor (cached for toggle checks)
+		this.#ownedSpellKeys.clear();
 		for (const item of this.#actor.items) {
 			if (item.type === 'spell') {
-				ownedSpellNames.add(item.name.toLowerCase().trim());
+				this.#ownedSpellKeys.add(item.name.toLowerCase().trim());
 				const source = item._stats?.compendiumSource ?? item.flags?.core?.sourceId;
-				if (source) ownedSpellSources.add(source);
+				if (source) this.#ownedSpellKeys.add(source);
 			}
 		}
 
 		// Enrich spell data for display
 		filteredSpells = filteredSpells.map((s) => {
 			const alreadyOwned =
-				ownedSpellNames.has(s.name.toLowerCase().trim()) ||
-				(s.uuid && ownedSpellSources.has(s.uuid));
+				this.#ownedSpellKeys.has(s.name.toLowerCase().trim()) ||
+				(s.uuid && this.#ownedSpellKeys.has(s.uuid));
 			return {
 				...s,
 				alreadyOwned,
@@ -183,20 +172,10 @@ class SpellSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		const uuid = target.dataset.uuid;
 		if (!uuid) return;
 
-		// Prevent toggling already-owned spells
+		// Prevent toggling already-owned spells (uses cached data from _prepareContext)
+		if (this.#ownedSpellKeys.has(uuid)) return;
 		const spell = this.#allSpells.find((s) => s.uuid === uuid);
-		if (spell) {
-			const ownedNames = new Set();
-			const ownedSources = new Set();
-			for (const item of this.#actor.items) {
-				if (item.type === 'spell') {
-					ownedNames.add(item.name.toLowerCase().trim());
-					const source = item._stats?.compendiumSource ?? item.flags?.core?.sourceId;
-					if (source) ownedSources.add(source);
-				}
-			}
-			if (ownedNames.has(spell.name.toLowerCase().trim()) || ownedSources.has(uuid)) return;
-		}
+		if (spell && this.#ownedSpellKeys.has(spell.name.toLowerCase().trim())) return;
 
 		if (this.#selectedUuids.has(uuid)) {
 			this.#selectedUuids.delete(uuid);
@@ -218,10 +197,6 @@ class SpellSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 
 	static #onCancel() {
 		this.close();
-	}
-
-	get selectedUuids() {
-		return new Set(this.#selectedUuids);
 	}
 }
 

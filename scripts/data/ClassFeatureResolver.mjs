@@ -16,24 +16,6 @@ class ClassFeatureResolver {
 	}
 
 	/**
-	 * Resolve features for a specific level.
-	 * @param {string} classIdentifier
-	 * @param {number} level
-	 * @param {string|null} subclassIdentifier
-	 * @returns {Array<{uuid: string|null, name: string, img: string, level: number, matched: boolean}>}
-	 */
-	resolve(classIdentifier, level, subclassIdentifier = null) {
-		const featureNames = this.#dataProvider.getFeaturesForLevel(
-			classIdentifier,
-			level,
-			subclassIdentifier,
-		);
-
-		const matches = this.#compendiumBrowser.findFeaturesByName(featureNames, classIdentifier);
-		return matches.map((m) => ({ ...m, level }));
-	}
-
-	/**
 	 * Resolve features across a range of levels (inclusive).
 	 * @param {string} classIdentifier
 	 * @param {number} fromLevel

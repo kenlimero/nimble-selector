@@ -1,4 +1,4 @@
-import { MODULE_ID, TEMPLATE_PATH } from '../utils/constants.mjs';
+import { MODULE_ID, TEMPLATE_PATH, SCHOOL_ICONS } from '../utils/constants.mjs';
 import { ClassFeatureResolver } from '../data/ClassFeatureResolver.mjs';
 import { SpellSchoolResolver } from '../data/SpellSchoolResolver.mjs';
 import { SpellTierResolver } from '../data/SpellTierResolver.mjs';
@@ -9,17 +9,6 @@ import { SpellSelector } from './SpellSelector.mjs';
 import { EquipmentSelector } from './EquipmentSelector.mjs';
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
-
-const SCHOOL_ICONS = {
-	fire: 'fa-solid fa-fire-flame-curved',
-	ice: 'fa-solid fa-snowflake',
-	lightning: 'fa-solid fa-bolt-lightning',
-	necrotic: 'fa-solid fa-skull',
-	radiant: 'fa-solid fa-sun',
-	wind: 'fa-solid fa-wind',
-	secret: 'fa-solid fa-eye-slash',
-	utility: 'fa-solid fa-toolbox',
-};
 
 /**
  * Main selector panel that provides an overview and access to the

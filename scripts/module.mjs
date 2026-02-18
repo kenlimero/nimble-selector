@@ -264,15 +264,11 @@ Hooks.on('updateItem', (item, changes, options, userId) => {
 	const actor = item.parent;
 	if (!actor || actor.type !== 'character') return;
 
-	// After the update hook fires, item.system.classLevel is already the NEW value.
-	// changes.system.classLevel also holds the new value (the diff that was applied).
 	const newLevel = changes.system.classLevel;
-	const oldLevel = newLevel - 1;
+	if (newLevel < 2) return;
 
-	if (newLevel > oldLevel && oldLevel >= 1) {
-		console.log(`${MODULE_ID} | Level-up detected: ${actor.name} ${oldLevel} → ${newLevel}`);
-		orchestrator.openForLevelUp(actor, newLevel, newLevel);
-	}
+	console.log(`${MODULE_ID} | Level-up detected: ${actor.name} ${newLevel - 1} → ${newLevel}`);
+	orchestrator.openForLevelUp(actor, newLevel, newLevel);
 });
 
 /* ---------------------------------------- */

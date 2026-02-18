@@ -144,14 +144,6 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 	static #onCancel() {
 		this.close();
 	}
-
-	/**
-	 * Get the currently selected UUIDs.
-	 * @returns {Set<string>}
-	 */
-	get selectedUuids() {
-		return new Set(this.#selectedUuids);
-	}
 }
 
 export { ClassFeatureSelector };

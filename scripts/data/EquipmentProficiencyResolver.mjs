@@ -39,27 +39,6 @@ class EquipmentProficiencyResolver {
 		return this.#compendiumBrowser.findEquipmentByType([...objectTypes]);
 	}
 
-	/**
-	 * Check if a character is proficient with a specific armor type.
-	 * @param {string} classIdentifier
-	 * @param {string} armorType - e.g. "cloth", "leather", "mail", "plate", "shield"
-	 * @returns {boolean}
-	 */
-	isArmorProficient(classIdentifier, armorType) {
-		const proficiencies = this.resolve(classIdentifier);
-		return proficiencies.armor.includes(armorType.toLowerCase());
-	}
-
-	/**
-	 * Check if a character is proficient with a specific weapon type.
-	 * @param {string} classIdentifier
-	 * @param {string} weaponType - e.g. "melee", "ranged", "simple", "martial"
-	 * @returns {boolean}
-	 */
-	isWeaponProficient(classIdentifier, weaponType) {
-		const proficiencies = this.resolve(classIdentifier);
-		return proficiencies.weapons.includes(weaponType.toLowerCase());
-	}
 }
 
 export { EquipmentProficiencyResolver };

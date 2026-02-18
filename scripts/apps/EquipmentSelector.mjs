@@ -136,10 +136,6 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 	static #onCancel() {
 		this.close();
 	}
-
-	get selectedUuids() {
-		return new Set(this.#selectedUuids);
-	}
 }
 
 export { EquipmentSelector };
