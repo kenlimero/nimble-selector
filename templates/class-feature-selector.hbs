@@ -21,11 +21,6 @@
 		<button type="button"
 				class="nimble-selector__filter-btn {{#unless activeGroup}}nimble-selector__filter-btn--active{{/unless}}"
 				data-action="filterGroup" data-group="">
-			<i class="fa-solid fa-layer-group"></i> {{localize "NIMBLE_SELECTOR.features.all"}}
-		</button>
-		<button type="button"
-				class="nimble-selector__filter-btn {{#if classFeatureFilterActive}}nimble-selector__filter-btn--active{{/if}}"
-				data-action="filterGroup" data-group="__class-features__">
 			<i class="fa-solid fa-scroll"></i> {{localize "NIMBLE_SELECTOR.features.title"}}
 		</button>
 		{{#each selectableGroups}}

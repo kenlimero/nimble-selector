@@ -50,12 +50,28 @@ class CompendiumBrowser {
 		}
 
 		const index = await pack.getIndex({
-			fields: ['system.class', 'system.featureType', 'system.group', 'system.description', 'system.gainedAtLevels', 'system.subclass'],
+			fields: ['system.class', 'system.featureType', 'system.group', 'system.description', 'system.gainedAtLevel', 'system.gainedAtLevels', 'system.subclass'],
 		});
 
+		// Build a folder ID → class name map so features with empty class
+		// (e.g. savage-arsenal) can be resolved via their compendium folder.
+		const folderClassMap = this.#buildFolderClassMap(pack);
+
 		for (const entry of index) {
-			const cls = entry.system?.class ?? '';
+			let cls = entry.system?.class ?? '';
+			if (!cls && entry.folder) {
+				cls = folderClassMap.get(entry.folder) ?? '';
+			}
+
 			const normalizedClass = this.#normalizeString(cls);
+
+			// gainedAtLevels with gainedAtLevel fallback
+			let levels = entry.system?.gainedAtLevels;
+			if (!Array.isArray(levels) || levels.length === 0) {
+				const single = entry.system?.gainedAtLevel;
+				levels = single != null ? [single] : [];
+			}
+
 			const featureData = {
 				uuid: entry.uuid,
 				name: entry.name,
@@ -65,7 +81,7 @@ class CompendiumBrowser {
 				featureType: entry.system?.featureType ?? '',
 				group: entry.system?.group ?? '',
 				description: this.#extractDescription(entry.system?.description),
-				gainedAtLevels: entry.system?.gainedAtLevels ?? [],
+				gainedAtLevels: levels,
 				subclass: entry.system?.subclass ?? false,
 			};
 
@@ -82,6 +98,40 @@ class CompendiumBrowser {
 			}
 			this.#featureByClassIndex.get(normalizedClass).push(featureData);
 		}
+	}
+
+	/**
+	 * Build a mapping from compendium folder IDs to class names.
+	 * Top-level folders in the class-features pack represent classes;
+	 * subfolders inherit the class of their root ancestor.
+	 * @param {CompendiumCollection} pack
+	 * @returns {Map<string, string>}
+	 */
+	#buildFolderClassMap(pack) {
+		const map = new Map();
+		if (!pack.folders?.size) return map;
+
+		// Identify root folders (no parent) → these are the class names
+		const rootNames = new Map();
+		for (const folder of pack.folders) {
+			if (!folder.folder) {
+				rootNames.set(folder._id, this.#normalizeString(folder.name));
+			}
+		}
+
+		// Map every folder to its root ancestor's class name
+		for (const folder of pack.folders) {
+			let current = folder;
+			while (current.folder) {
+				const parent = pack.folders.get(current.folder);
+				if (!parent) break;
+				current = parent;
+			}
+			const className = rootNames.get(current._id);
+			if (className) map.set(folder._id, className);
+		}
+
+		return map;
 	}
 
 	async #indexSpells() {
