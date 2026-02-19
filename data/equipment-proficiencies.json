@@ -1,4 +1,9 @@
 {
+  "weaponCategories": {
+    "blades": ["Longsword", "Greatsword", "Short Sword", "Rapier", "Dagger", "Sickle", "Glaive"],
+    "staves": ["Staff"],
+    "wands": []
+  },
   "berserker": {
     "armor": [],
     "weapons": ["all-str"]

@@ -213,9 +213,25 @@
 .nimble-selector__filter-bar {
 	display: flex;
 	flex-wrap: wrap;
+	align-items: center;
 	gap: 0.3rem;
 	padding: 0.5rem;
 	background: var(--nimble-navigation-background-color, hsl(0, 0%, 24%));
+}
+
+.nimble-selector__filter-toggle {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+	color: var(--nimble-navigation-text-color, hsl(38, 38%, 94%));
+	font-size: var(--nimble-sm-text, 0.833rem);
+	font-weight: 600;
+	cursor: pointer;
+	user-select: none;
+}
+
+.nimble-selector__filter-toggle input[type="checkbox"] {
+	pointer-events: none;
 }
 
 .nimble-selector__filter-btn {

@@ -174,11 +174,14 @@ class CompendiumBrowser {
 		}
 
 		const index = await pack.getIndex({
-			fields: ['system.objectType', 'system.properties', 'system.description'],
+			fields: ['system.objectType', 'system.properties', 'system.description', 'system.activation'],
 		});
 
 		for (const entry of index) {
 			const objectType = entry.system?.objectType ?? '';
+			const props = entry.system?.properties?.selected ?? [];
+			const descPublic = entry.system?.description?.public ?? '';
+
 			this.#itemIndex.set(entry.uuid, {
 				uuid: entry.uuid,
 				name: entry.name,
@@ -187,6 +190,9 @@ class CompendiumBrowser {
 				_normalizedType: this.#normalizeString(objectType),
 				properties: entry.system?.properties ?? {},
 				description: this.#extractDescription(entry.system?.description),
+				weaponAttr: this.#extractWeaponAttr(entry.system?.activation),
+				isRanged: Array.isArray(props) && props.includes('range'),
+				armorType: this.#extractArmorType(descPublic),
 			});
 		}
 	}
@@ -373,6 +379,18 @@ class CompendiumBrowser {
 			console.error(`nimble-selector | Failed to resolve UUID: ${uuid}`, e);
 			return null;
 		}
+	}
+
+	#extractWeaponAttr(activation) {
+		const formula = activation?.effects?.[0]?.formula ?? '';
+		if (formula.includes('@strength')) return 'strength';
+		if (formula.includes('@dexterity')) return 'dexterity';
+		return null;
+	}
+
+	#extractArmorType(descHtml) {
+		const match = descHtml.match(/<strong>Type:<\/strong>\s*(\w+)/i);
+		return match ? match[1].toLowerCase() : null;
 	}
 
 	#normalizeString(str) {

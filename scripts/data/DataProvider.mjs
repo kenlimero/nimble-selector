@@ -158,6 +158,10 @@ class DataProvider {
 	getEquipmentProficiencies(classIdentifier) {
 		return this.#equipmentProficiencies?.[classIdentifier] ?? { armor: [], weapons: [] };
 	}
+
+	getWeaponCategories() {
+		return this.#equipmentProficiencies?.weaponCategories ?? {};
+	}
 }
 
 export { DataProvider };

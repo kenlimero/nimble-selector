@@ -7,6 +7,14 @@
 		</div>
 	</div>
 
+	{{!-- Proficiency Filter --}}
+	<div class="nimble-selector__filter-bar">
+		<label class="nimble-selector__filter-toggle" data-action="toggleProficiencyFilter">
+			<input type="checkbox" {{#if showOnlyProficient}}checked{{/if}} />
+			{{localize "NIMBLE_SELECTOR.equipment.proficiencyFilter"}}
+		</label>
+	</div>
+
 	{{!-- Category Filter --}}
 	<div class="nimble-selector__category-tabs">
 		<button type="button"

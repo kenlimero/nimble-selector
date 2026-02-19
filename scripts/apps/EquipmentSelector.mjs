@@ -24,6 +24,7 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 	#proficiencies = null;
 	#selectedUuids = new Set();
 	#activeCategory = '';
+	#showOnlyProficient = true;
 	#scrollTop = 0;
 	#dataLoaded = false;
 	#proficiencyResolver = new EquipmentProficiencyResolver();
@@ -44,6 +45,7 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		actions: {
 			filterCategory: EquipmentSelector.#onFilterCategory,
 			toggleEquipment: EquipmentSelector.#onToggleEquipment,
+			toggleProficiencyFilter: EquipmentSelector.#onToggleProficiencyFilter,
 			confirm: EquipmentSelector.#onConfirm,
 			cancel: EquipmentSelector.#onCancel,
 		},
@@ -71,8 +73,16 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 	async _prepareContext() {
 		this.#loadEquipmentData();
 
-		// Determine available categories
-		const availableTypes = new Set(this.#allEquipment.map((e) => e.objectType));
+		// Filter by proficiency
+		let filteredEquipment = this.#allEquipment;
+		if (this.#showOnlyProficient) {
+			filteredEquipment = filteredEquipment.filter(
+				(e) => this.#proficiencyResolver.matchesProficiency(e, this.#proficiencies),
+			);
+		}
+
+		// Determine available categories from the (possibly filtered) list
+		const availableTypes = new Set(filteredEquipment.map((e) => e.objectType));
 		const categories = [...availableTypes].map((type) => ({
 			id: type,
 			label: CATEGORY_CONFIG[type]?.label ?? type,
@@ -80,8 +90,7 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 			active: this.#activeCategory === type,
 		}));
 
-		// Filter
-		let filteredEquipment = this.#allEquipment;
+		// Filter by category tab
 		if (this.#activeCategory) {
 			filteredEquipment = filteredEquipment.filter(
 				(e) => e.objectType === this.#activeCategory,
@@ -108,6 +117,7 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 			proficiencySummary: `${game.i18n.localize('NIMBLE_SELECTOR.panel.armor')}: ${armorSummary} | ${game.i18n.localize('NIMBLE_SELECTOR.panel.weapons')}: ${weaponSummary}`,
 			categories,
 			activeCategory: this.#activeCategory,
+			showOnlyProficient: this.#showOnlyProficient,
 			filteredEquipment,
 			selectedCount,
 			hasSelection: selectedCount > 0,
@@ -140,6 +150,12 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		} else {
 			this.#selectedUuids.add(uuid);
 		}
+		this.#saveScrollPosition();
+		this.render();
+	}
+
+	static #onToggleProficiencyFilter() {
+		this.#showOnlyProficient = !this.#showOnlyProficient;
 		this.#saveScrollPosition();
 		this.render();
 	}

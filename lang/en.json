@@ -57,7 +57,8 @@
 			"consumables": "Consumables",
 			"misc": "Misc",
 			"noEquipment": "No equipment matches the current filter.",
-			"grantSelected": "Grant Selected"
+			"grantSelected": "Grant Selected",
+			"proficiencyFilter": "Class proficiencies only"
 		},
 		"actions": {
 			"cancel": "Cancel",
