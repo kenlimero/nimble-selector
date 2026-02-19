@@ -90,10 +90,14 @@ class SpellSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 			active: this.#activeSchool === s,
 		}));
 
-		// Build tier filter data
+		// Build tier filter data (start at 0 for cantrips)
 		const availableTiers = [];
-		for (let t = 1; t <= maxTier; t++) {
-			availableTiers.push({ tier: t, active: this.#activeTier === t });
+		for (let t = 0; t <= maxTier; t++) {
+			availableTiers.push({
+				tier: t,
+				label: t === 0 ? 'Cantrip' : `Tier ${t}`,
+				active: this.#activeTier === t,
+			});
 		}
 
 		// Apply filters
