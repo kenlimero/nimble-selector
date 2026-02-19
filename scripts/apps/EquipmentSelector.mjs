@@ -5,9 +5,9 @@ import { ItemGranter } from '../core/ItemGranter.mjs';
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
 const CATEGORY_CONFIG = {
-	weapon: { label: 'Weapons', icon: 'fa-solid fa-sword' },
 	armor: { label: 'Armor', icon: 'fa-solid fa-shield-halved' },
 	shield: { label: 'Shields', icon: 'fa-solid fa-shield' },
+	weapon: { label: 'Weapons', icon: 'fa-solid fa-sword' },
 	consumable: { label: 'Consumables', icon: 'fa-solid fa-flask' },
 	misc: { label: 'Misc', icon: 'fa-solid fa-bag-shopping' },
 };
@@ -81,14 +81,16 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 			);
 		}
 
-		// Determine available categories from the (possibly filtered) list
+		// Build category tabs in fixed order, only showing those with items
 		const availableTypes = new Set(filteredEquipment.map((e) => e.objectType));
-		const categories = [...availableTypes].map((type) => ({
-			id: type,
-			label: CATEGORY_CONFIG[type]?.label ?? type,
-			icon: CATEGORY_CONFIG[type]?.icon ?? 'fa-solid fa-box',
-			active: this.#activeCategory === type,
-		}));
+		const categories = Object.keys(CATEGORY_CONFIG)
+			.filter((type) => availableTypes.has(type))
+			.map((type) => ({
+				id: type,
+				label: CATEGORY_CONFIG[type].label,
+				icon: CATEGORY_CONFIG[type].icon,
+				active: this.#activeCategory === type,
+			}));
 
 		// Filter by category tab
 		if (this.#activeCategory) {
