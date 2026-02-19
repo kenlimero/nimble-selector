@@ -92,7 +92,9 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 
 		// Apply group filter
 		let filteredFeatures = this.#features;
-		if (this.#activeGroup) {
+		if (this.#activeGroup === '__class-features__') {
+			filteredFeatures = this.#features.filter((f) => !f.selectableGroupId);
+		} else if (this.#activeGroup) {
 			filteredFeatures = this.#features.filter(
 				(f) => f.selectableGroupId === this.#activeGroup,
 			);
@@ -126,6 +128,7 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 			hasSelection: selectedCount > 0,
 			selectableGroups,
 			activeGroup: this.#activeGroup,
+			classFeatureFilterActive: this.#activeGroup === '__class-features__',
 			hasSelectableGroups: selectableGroups.length > 0,
 		};
 	}
