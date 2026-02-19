@@ -141,27 +141,26 @@ class CompendiumBrowser {
 			return;
 		}
 
-		const index = await pack.getIndex({
-			fields: ['system.school', 'system.tier', 'system.properties.selected', 'system.description'],
-		});
+		// Use getDocuments() instead of getIndex() to reliably access
+		// nested fields like system.properties.selected (getIndex may
+		// return a cached index missing these fields).
+		const documents = await pack.getDocuments();
 
-		for (const entry of index) {
-			const props = entry.system?.properties?.selected;
-			const isUtility = Array.isArray(props)
-				? props.includes('utilitySpell')
-				: (props instanceof Set ? props.has('utilitySpell') : false);
+		for (const doc of documents) {
+			const props = doc.system?.properties?.selected;
+			const isUtility = Array.isArray(props) && props.includes('utilitySpell');
 
-			const school = entry.system?.school ?? '';
-			this.#spellIndex.set(entry.uuid, {
-				uuid: entry.uuid,
-				name: entry.name,
-				_normalizedName: this.#normalizeString(entry.name),
-				img: entry.img,
+			const school = doc.system?.school ?? '';
+			this.#spellIndex.set(doc.uuid, {
+				uuid: doc.uuid,
+				name: doc.name,
+				_normalizedName: this.#normalizeString(doc.name),
+				img: doc.img,
 				school,
 				_normalizedSchool: this.#normalizeString(school),
-				tier: entry.system?.tier ?? 0,
+				tier: doc.system?.tier ?? 0,
 				isUtility,
-				description: this.#extractDescription(entry.system?.description),
+				description: this.#extractDescription(doc.system?.description),
 			});
 		}
 	}
