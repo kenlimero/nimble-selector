@@ -34,6 +34,7 @@
 	{{/if}}
 
 	<div class="nimble-selector__scroll-area">
+		{{! Progression features grouped by level }}
 		{{#each levelGroups}}
 			<div class="nimble-selector__level-group">
 				<div class="nimble-selector__level-label">{{localize "NIMBLE_SELECTOR.panel.level"}} {{this.level}}</div>
@@ -49,13 +50,7 @@
 							<div class="nimble-selector__card-content">
 								<div class="nimble-selector__card-name">{{this.name}}</div>
 								<div class="nimble-selector__card-meta">
-									{{#if this.selectableGroup}}
-										<span class="nimble-selector__group-badge">
-											<i class="fa-solid fa-list-check"></i> {{this.selectableGroup}}
-										</span>
-									{{else}}
-										{{#if this.matched}}{{localize "NIMBLE_SELECTOR.features.compendiumMatch"}}{{else}}{{localize "NIMBLE_SELECTOR.features.notFound"}}{{/if}}
-									{{/if}}
+									{{#if this.matched}}{{localize "NIMBLE_SELECTOR.features.compendiumMatch"}}{{else}}{{localize "NIMBLE_SELECTOR.features.notFound"}}{{/if}}
 								</div>
 							</div>
 							{{#if this.alreadyOwned}}
@@ -67,7 +62,37 @@
 			</div>
 		{{/each}}
 
-		{{#unless levelGroups.length}}
+		{{! Selectable group sections }}
+		{{#each selectableGroupSections}}
+			<div class="nimble-selector__level-group">
+				<div class="nimble-selector__level-label">
+					<i class="fa-solid fa-list-check"></i> {{this.label}}
+				</div>
+				<div class="nimble-selector__card-grid">
+					{{#each this.features}}
+						<div class="nimble-selector__card {{#if this.selected}}nimble-selector__card--selected{{/if}} {{#if this.alreadyOwned}}nimble-selector__card--owned{{/if}}"
+							 data-action="toggleFeature" data-uuid="{{this.uuid}}" data-name="{{this.name}}"
+							 data-tooltip="{{this.description}}" data-tooltip-direction="LEFT">
+							<input type="checkbox" class="nimble-selector__card-checkbox"
+								   {{#if this.selected}}checked{{/if}}
+								   {{#if this.alreadyOwned}}disabled{{/if}} />
+							<img class="nimble-selector__card-img" src="{{this.img}}" alt="{{this.name}}" />
+							<div class="nimble-selector__card-content">
+								<div class="nimble-selector__card-name">{{this.name}}</div>
+								<div class="nimble-selector__card-meta">
+									{{#if this.matched}}{{localize "NIMBLE_SELECTOR.features.compendiumMatch"}}{{else}}{{localize "NIMBLE_SELECTOR.features.notFound"}}{{/if}}
+								</div>
+							</div>
+							{{#if this.alreadyOwned}}
+								<span class="nimble-selector__card-owned-tag">{{localize "NIMBLE_SELECTOR.panel.owned"}}</span>
+							{{/if}}
+						</div>
+					{{/each}}
+				</div>
+			</div>
+		{{/each}}
+
+		{{#unless hasContent}}
 			<div class="nimble-selector__empty">{{localize "NIMBLE_SELECTOR.features.noFeatures"}}</div>
 		{{/unless}}
 	</div>

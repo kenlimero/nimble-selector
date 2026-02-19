@@ -6,7 +6,8 @@ const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
 /**
  * Application for selecting and granting class features to a character.
- * Shows features organized by level with checkboxes and duplicate detection.
+ * Shows progression features organized by level, followed by selectable
+ * group sections listed once (not duplicated per level).
  */
 class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 	#actor;
@@ -69,7 +70,7 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 
 		this.#features = this.#resolver.markOwnedFeatures(this.#actor, this.#features);
 
-		// Auto-select only regular features, not selectable options (only on first render)
+		// Auto-select only progression features, not selectable options (only on first render)
 		if (!this.#initialSelectionDone) {
 			for (const f of this.#features) {
 				if (!f.alreadyOwned && f.matched && !f.selectableGroup) {
@@ -79,43 +80,53 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 			this.#initialSelectionDone = true;
 		}
 
-		// Build selectable group filter buttons (merged by groupId)
-		const groupIdSet = new Set();
+		// Build selectable group sections (always needed for filter buttons)
+		const groupMap = new Map();
 		for (const f of this.#features) {
-			if (f.selectableGroupId) groupIdSet.add(f.selectableGroupId);
-		}
-		const selectableGroups = [...groupIdSet].map((id) => ({
-			id,
-			label: id,
-			active: this.#activeGroup === id,
-		}));
-
-		// Apply group filter — selectable features are hidden by default,
-		// shown only when their specific group filter is active.
-		let filteredFeatures;
-		if (this.#activeGroup && this.#activeGroup !== '__class-features__') {
-			filteredFeatures = this.#features.filter(
-				(f) => f.selectableGroupId === this.#activeGroup,
-			);
-		} else {
-			filteredFeatures = this.#features.filter((f) => !f.selectableGroupId);
-		}
-
-		// Group by level
-		const levelMap = new Map();
-		for (const feature of filteredFeatures) {
-			if (!levelMap.has(feature.level)) {
-				levelMap.set(feature.level, []);
+			if (!f.selectableGroupId) continue;
+			if (!groupMap.has(f.selectableGroupId)) {
+				groupMap.set(f.selectableGroupId, {
+					id: f.selectableGroupId,
+					label: f.selectableGroup,
+					active: this.#activeGroup === f.selectableGroupId,
+					features: [],
+				});
 			}
-			levelMap.get(feature.level).push({
-				...feature,
-				selected: this.#selectedUuids.has(feature.uuid),
+			groupMap.get(f.selectableGroupId).features.push({
+				...f,
+				selected: this.#selectedUuids.has(f.uuid),
 			});
 		}
 
-		const levelGroups = [...levelMap.entries()]
-			.sort(([a], [b]) => a - b)
-			.map(([level, features]) => ({ level, features }));
+		const selectableGroupSections = [...groupMap.values()];
+
+		// When a group filter is active, show only that group
+		let levelGroups = [];
+		let filteredGroupSections = selectableGroupSections;
+
+		if (this.#activeGroup) {
+			// Filter mode: show only the selected group
+			filteredGroupSections = selectableGroupSections.filter(
+				(g) => g.id === this.#activeGroup,
+			);
+		} else {
+			// Default mode: progression features by level + all selectable sections
+			const levelMap = new Map();
+			for (const f of this.#features) {
+				if (f.selectableGroupId) continue;
+				if (!levelMap.has(f.level)) {
+					levelMap.set(f.level, []);
+				}
+				levelMap.get(f.level).push({
+					...f,
+					selected: this.#selectedUuids.has(f.uuid),
+				});
+			}
+
+			levelGroups = [...levelMap.entries()]
+				.sort(([a], [b]) => a - b)
+				.map(([level, features]) => ({ level, features }));
+		}
 
 		const selectedCount = this.#selectedUuids.size;
 
@@ -125,11 +136,13 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 			toLevel: this.#toLevel,
 			isRange: this.#fromLevel !== this.#toLevel,
 			levelGroups,
+			selectableGroupSections: filteredGroupSections,
 			selectedCount,
 			hasSelection: selectedCount > 0,
-			selectableGroups,
+			hasContent: levelGroups.length > 0 || filteredGroupSections.length > 0,
+			hasSelectableGroups: selectableGroupSections.length > 0,
+			selectableGroups: selectableGroupSections,
 			activeGroup: this.#activeGroup,
-			hasSelectableGroups: selectableGroups.length > 0,
 		};
 	}
 
@@ -154,7 +167,6 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		const uuid = target.dataset.uuid;
 		if (!uuid) return;
 
-		// Prevent toggling already-owned features
 		const feature = this.#features.find((f) => f.uuid === uuid);
 		if (feature?.alreadyOwned) return;
 
@@ -170,7 +182,6 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 	static #onSelectAll() {
 		for (const f of this.#features) {
 			if (f.alreadyOwned || !f.matched) continue;
-			if (this.#activeGroup && f.selectableGroupId !== this.#activeGroup) continue;
 			this.#selectedUuids.add(f.uuid);
 		}
 		this.#saveScrollPosition();
@@ -178,15 +189,7 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 	}
 
 	static #onDeselectAll() {
-		if (this.#activeGroup) {
-			for (const f of this.#features) {
-				if (f.selectableGroupId === this.#activeGroup) {
-					this.#selectedUuids.delete(f.uuid);
-				}
-			}
-		} else {
-			this.#selectedUuids.clear();
-		}
+		this.#selectedUuids.clear();
 		this.#saveScrollPosition();
 		this.render();
 	}

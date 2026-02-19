@@ -45,32 +45,21 @@ class ClassFeatureResolver {
 			});
 		}
 
-		// Add selectable group features, repeated at each applicable level in range
+		// Add selectable group features (once per feature, not duplicated per level)
 		for (const [groupId, features] of selectableGroups) {
 			const groupLabel = ClassFeatureResolver.#slugToLabel(groupId);
 
-			// Collect all distinct levels in range across all features of this group
-			const groupLevels = new Set();
 			for (const f of features) {
-				for (const l of f.gainedAtLevels) {
-					if (l >= fromLevel && l <= toLevel) groupLevels.add(l);
-				}
-			}
-
-			// For each applicable level, include all options from this group
-			for (const level of groupLevels) {
-				for (const f of features) {
-					results.push({
-						uuid: f.uuid,
-						name: f.name,
-						img: f.img,
-						level,
-						matched: true,
-						selectableGroup: groupLabel,
-						selectableGroupId: groupId,
-						description: f.description,
-					});
-				}
+				results.push({
+					uuid: f.uuid,
+					name: f.name,
+					img: f.img,
+					level: null,
+					matched: true,
+					selectableGroup: groupLabel,
+					selectableGroupId: groupId,
+					description: f.description,
+				});
 			}
 		}
 
