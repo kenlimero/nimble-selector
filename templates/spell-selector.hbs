@@ -46,7 +46,8 @@
 			<div class="nimble-selector__card-grid">
 				{{#each filteredSpells}}
 					<div class="nimble-selector__card {{#if this.selected}}nimble-selector__card--selected{{/if}} {{#if this.alreadyOwned}}nimble-selector__card--owned{{/if}}"
-						 data-action="toggleSpell" data-uuid="{{this.uuid}}">
+						 data-action="toggleSpell" data-uuid="{{this.uuid}}"
+						 data-tooltip="{{this.description}}" data-tooltip-direction="LEFT">
 						<input type="checkbox" class="nimble-selector__card-checkbox"
 							   {{#if this.selected}}checked{{/if}}
 							   {{#if this.alreadyOwned}}disabled{{/if}} />

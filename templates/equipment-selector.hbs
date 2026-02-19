@@ -29,7 +29,8 @@
 			<div class="nimble-selector__card-grid">
 				{{#each filteredEquipment}}
 					<div class="nimble-selector__card {{#if this.selected}}nimble-selector__card--selected{{/if}}"
-						 data-action="toggleEquipment" data-uuid="{{this.uuid}}">
+						 data-action="toggleEquipment" data-uuid="{{this.uuid}}"
+						 data-tooltip="{{this.description}}" data-tooltip-direction="LEFT">
 						<input type="checkbox" class="nimble-selector__card-checkbox"
 							   {{#if this.selected}}checked{{/if}} />
 						<img class="nimble-selector__card-img" src="{{this.img}}" alt="{{this.name}}" />

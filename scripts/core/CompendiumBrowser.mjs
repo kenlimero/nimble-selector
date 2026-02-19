@@ -49,7 +49,7 @@ class CompendiumBrowser {
 		}
 
 		const index = await pack.getIndex({
-			fields: ['system.class', 'system.featureType', 'system.group'],
+			fields: ['system.class', 'system.featureType', 'system.group', 'system.description'],
 		});
 
 		for (const entry of index) {
@@ -64,6 +64,7 @@ class CompendiumBrowser {
 				class: entry.system?.class ?? '',
 				featureType: entry.system?.featureType ?? '',
 				group: entry.system?.group ?? '',
+				description: this.#extractDescription(entry.system?.description),
 			});
 		}
 	}
@@ -76,7 +77,7 @@ class CompendiumBrowser {
 		}
 
 		const index = await pack.getIndex({
-			fields: ['system.school', 'system.tier', 'system.properties.selected'],
+			fields: ['system.school', 'system.tier', 'system.properties.selected', 'system.description'],
 		});
 
 		for (const entry of index) {
@@ -92,6 +93,7 @@ class CompendiumBrowser {
 				school: entry.system?.school ?? '',
 				tier: entry.system?.tier ?? 0,
 				isUtility,
+				description: this.#extractDescription(entry.system?.description),
 			});
 		}
 	}
@@ -104,7 +106,7 @@ class CompendiumBrowser {
 		}
 
 		const index = await pack.getIndex({
-			fields: ['system.objectType', 'system.properties'],
+			fields: ['system.objectType', 'system.properties', 'system.description'],
 		});
 
 		for (const entry of index) {
@@ -114,6 +116,7 @@ class CompendiumBrowser {
 				img: entry.img,
 				objectType: entry.system?.objectType ?? '',
 				properties: entry.system?.properties ?? {},
+				description: this.#extractDescription(entry.system?.description),
 			});
 		}
 	}
@@ -155,6 +158,7 @@ class CompendiumBrowser {
 				name,
 				img: match?.img ?? 'icons/svg/mystery-man.svg',
 				matched: !!match,
+				description: match?.description ?? '',
 			});
 		}
 
@@ -233,6 +237,20 @@ class CompendiumBrowser {
 
 	#stripNumericSuffix(str) {
 		return str.replace(/\s*\(\d+\)$/, '').trim();
+	}
+
+	#extractDescription(desc) {
+		if (!desc) return '';
+		if (typeof desc === 'string') return desc;
+		if (typeof desc === 'object') {
+			// Nimble spells: { baseEffect, higherLevelEffect }
+			if (desc.baseEffect) return String(desc.baseEffect);
+			// Nimble objects: { public, unidentified, secret }
+			if (desc.public) return String(desc.public);
+			// Standard FoundryVTT: { value }
+			if (desc.value) return String(desc.value);
+		}
+		return '';
 	}
 }
 
