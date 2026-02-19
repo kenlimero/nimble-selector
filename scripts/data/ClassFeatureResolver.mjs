@@ -1,5 +1,6 @@
 import { DataProvider } from './DataProvider.mjs';
 import { CompendiumBrowser } from '../core/CompendiumBrowser.mjs';
+import { buildOwnedItemKeys } from '../utils/constants.mjs';
 
 /**
  * Resolves class features for a given class and level by cross-referencing
@@ -80,22 +81,13 @@ class ClassFeatureResolver {
 	 * @returns {Array<{uuid: string|null, name: string, alreadyOwned: boolean}>}
 	 */
 	markOwnedFeatures(actor, features) {
-		const ownedNames = new Set();
-		const ownedSources = new Set();
-
-		for (const item of actor.items) {
-			if (item.type === 'feature') {
-				ownedNames.add(item.name.toLowerCase().trim());
-				const source = item._stats?.compendiumSource ?? item.flags?.core?.sourceId;
-				if (source) ownedSources.add(source);
-			}
-		}
+		const ownedKeys = buildOwnedItemKeys(actor, 'feature');
 
 		return features.map((f) => ({
 			...f,
 			alreadyOwned:
-				ownedNames.has(f.name.toLowerCase().trim()) ||
-				(f.uuid && ownedSources.has(f.uuid)),
+				ownedKeys.has(f.name.toLowerCase().trim()) ||
+				(f.uuid && ownedKeys.has(f.uuid)),
 		}));
 	}
 }

@@ -1,4 +1,4 @@
-import { MODULE_ID, TEMPLATE_PATH, SCHOOL_ICONS } from '../utils/constants.mjs';
+import { MODULE_ID, TEMPLATE_PATH, SCHOOL_ICONS, capitalize, buildOwnedItemKeys } from '../utils/constants.mjs';
 import { SpellSchoolResolver } from '../data/SpellSchoolResolver.mjs';
 import { SpellTierResolver } from '../data/SpellTierResolver.mjs';
 import { CompendiumBrowser } from '../core/CompendiumBrowser.mjs';
@@ -21,6 +21,9 @@ class SpellSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 	#activeSchool = '';
 	#activeTier = null;
 	#scrollTop = 0;
+	#dataLoaded = false;
+	#grantedSchools = [];
+	#maxTier = 0;
 	#schoolResolver = new SpellSchoolResolver();
 	#tierResolver = new SpellTierResolver();
 	#compendiumBrowser = CompendiumBrowser.instance;
@@ -61,53 +64,58 @@ class SpellSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		this.#level = level;
 	}
 
-	async _prepareContext() {
+	#loadSpellData() {
+		if (this.#dataLoaded) return;
+
 		const schoolAccess = this.#schoolResolver.resolve(
 			this.#classIdentifier,
 			this.#level,
 			this.#subclassIdentifier,
 		);
-		const maxTier = this.#tierResolver.resolve(
+		this.#maxTier = this.#tierResolver.resolve(
 			this.#classIdentifier,
 			this.#level,
 			this.#subclassIdentifier,
 		);
 
-		const grantedSchools = schoolAccess.granted;
-		const hasUtility = grantedSchools.includes('utility');
+		this.#grantedSchools = schoolAccess.granted;
+		const hasUtility = this.#grantedSchools.includes('utility');
+		const realSchools = this.#grantedSchools.filter((s) => s !== 'utility');
 
-		// Real schools only (utility is a spell property, not a school in the system)
-		const realSchools = grantedSchools.filter((s) => s !== 'utility');
+		this.#allSpells = this.#compendiumBrowser.findSpellsBySchoolAndTier(realSchools, this.#maxTier, hasUtility);
+		this.#ownedSpellKeys = buildOwnedItemKeys(this.#actor, 'spell');
+		this.#dataLoaded = true;
+	}
 
-		// Load spells from compendium — utility spells excluded until level grants access
-		this.#allSpells = this.#compendiumBrowser.findSpellsBySchoolAndTier(realSchools, maxTier, hasUtility);
+	async _prepareContext() {
+		this.#loadSpellData();
 
-		// Build school filter data (only real schools + utility if accessible)
-		const schools = grantedSchools.map((s) => ({
+		// Build school filter data
+		const schools = this.#grantedSchools.map((s) => ({
 			id: s,
-			label: s.charAt(0).toUpperCase() + s.slice(1),
+			label: capitalize(s),
 			icon: SCHOOL_ICONS[s] ?? 'fa-solid fa-sparkles',
 			active: this.#activeSchool === s,
 		}));
 
 		// Build tier filter data (start at 0 for cantrips)
 		const availableTiers = [];
-		for (let t = 0; t <= maxTier; t++) {
+		for (let t = 0; t <= this.#maxTier; t++) {
 			availableTiers.push({
 				tier: t,
-				label: t === 0 ? 'Cantrip' : `Tier ${t}`,
+				label: t === 0 ? game.i18n.localize('NIMBLE_SELECTOR.spells.cantrip') : `${game.i18n.localize('NIMBLE_SELECTOR.spells.tier')} ${t}`,
 				active: this.#activeTier === t,
 			});
 		}
 
 		// Apply filters
-		let filteredSpells = [...this.#allSpells];
+		let filteredSpells = this.#allSpells;
 		if (this.#activeSchool) {
 			if (this.#activeSchool === 'utility') {
 				filteredSpells = filteredSpells.filter((s) => s.isUtility);
 			} else {
 				filteredSpells = filteredSpells.filter(
-					(s) => s.school.toLowerCase() === this.#activeSchool,
+					(s) => s._normalizedSchool === this.#activeSchool,
 				);
 			}
 		}
@@ -115,28 +123,18 @@ class SpellSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 			filteredSpells = filteredSpells.filter((s) => s.tier === this.#activeTier);
 		}
 
-		// Detect already-owned spells on the actor (cached for toggle checks)
-		this.#ownedSpellKeys.clear();
-		for (const item of this.#actor.items) {
-			if (item.type === 'spell') {
-				this.#ownedSpellKeys.add(item.name.toLowerCase().trim());
-				const source = item._stats?.compendiumSource ?? item.flags?.core?.sourceId;
-				if (source) this.#ownedSpellKeys.add(source);
-			}
-		}
-
 		// Enrich spell data for display
 		filteredSpells = filteredSpells.map((s) => {
 			const alreadyOwned =
-				this.#ownedSpellKeys.has(s.name.toLowerCase().trim()) ||
+				this.#ownedSpellKeys.has(s._normalizedName) ||
 				(s.uuid && this.#ownedSpellKeys.has(s.uuid));
 			return {
 				...s,
 				alreadyOwned,
 				selected: !alreadyOwned && this.#selectedUuids.has(s.uuid),
-				schoolIcon: SCHOOL_ICONS[s.school.toLowerCase()] ?? '',
-				schoolLabel: s.school.charAt(0).toUpperCase() + s.school.slice(1),
-				tierLabel: s.isUtility ? 'Utility' : (s.tier === 0 ? 'Cantrip' : `Tier ${s.tier}`),
+				schoolIcon: SCHOOL_ICONS[s._normalizedSchool] ?? '',
+				schoolLabel: capitalize(s.school),
+				tierLabel: s.isUtility ? game.i18n.localize('NIMBLE_SELECTOR.spells.utility') : (s.tier === 0 ? game.i18n.localize('NIMBLE_SELECTOR.spells.cantrip') : `${game.i18n.localize('NIMBLE_SELECTOR.spells.tier')} ${s.tier}`),
 				tierClass: s.isUtility ? 'utility' : (s.tier === 0 ? 'cantrip' : String(s.tier)),
 			};
 		});
@@ -144,8 +142,8 @@ class SpellSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		const selectedCount = this.#selectedUuids.size;
 
 		return {
-			className: this.#classIdentifier,
-			maxTier,
+			className: capitalize(this.#classIdentifier),
+			maxTier: this.#maxTier,
 			schools,
 			activeSchool: this.#activeSchool,
 			availableTiers,
@@ -192,7 +190,7 @@ class SpellSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		// Prevent toggling already-owned spells (uses cached data from _prepareContext)
 		if (this.#ownedSpellKeys.has(uuid)) return;
 		const spell = this.#allSpells.find((s) => s.uuid === uuid);
-		if (spell && this.#ownedSpellKeys.has(spell.name.toLowerCase().trim())) return;
+		if (spell && this.#ownedSpellKeys.has(spell._normalizedName)) return;
 
 		if (this.#selectedUuids.has(uuid)) {
 			this.#selectedUuids.delete(uuid);
@@ -209,7 +207,7 @@ class SpellSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 
 		await this.#granter.grantItemsByUuid(this.#actor, uuids);
 		this.#selectedUuids.clear();
-		ui.notifications.info(`Granted ${uuids.length} spell(s) to ${this.#actor.name}.`);
+		ui.notifications.info(game.i18n.format('NIMBLE_SELECTOR.notifications.grantedSpells', { count: uuids.length, name: this.#actor.name }));
 		this.close();
 	}
 

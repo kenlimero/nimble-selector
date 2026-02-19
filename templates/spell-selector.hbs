@@ -2,8 +2,8 @@
 	<div class="nimble-selector__header">
 		<i class="fa-solid fa-hat-wizard nimble-selector__header-icon"></i>
 		<div class="nimble-selector__header-info">
-			<h2 class="nimble-selector__header-title">Spell Selection</h2>
-			<p class="nimble-selector__header-subtitle">{{className}} &mdash; Max Tier {{maxTier}}</p>
+			<h2 class="nimble-selector__header-title">{{localize "NIMBLE_SELECTOR.spells.title"}}</h2>
+			<p class="nimble-selector__header-subtitle">{{className}} &mdash; {{localize "NIMBLE_SELECTOR.spells.maxTier"}} {{maxTier}}</p>
 		</div>
 	</div>
 
@@ -12,7 +12,7 @@
 		<button type="button"
 				class="nimble-selector__filter-btn {{#unless activeSchool}}nimble-selector__filter-btn--active{{/unless}}"
 				data-action="filterSchool" data-school="">
-			All
+			{{localize "NIMBLE_SELECTOR.spells.allSchools"}}
 		</button>
 		{{#each schools}}
 			<button type="button"
@@ -29,7 +29,7 @@
 		<button type="button"
 				class="nimble-selector__category-tab {{#unless activeTier}}nimble-selector__category-tab--active{{/unless}}"
 				data-action="filterTier" data-tier="">
-			All Tiers
+			{{localize "NIMBLE_SELECTOR.spells.allTiers"}}
 		</button>
 		{{#each availableTiers}}
 			<button type="button"
@@ -63,23 +63,23 @@
 							</div>
 						</div>
 						{{#if this.alreadyOwned}}
-							<span class="nimble-selector__card-owned-tag">Owned</span>
+							<span class="nimble-selector__card-owned-tag">{{localize "NIMBLE_SELECTOR.panel.owned"}}</span>
 						{{/if}}
 					</div>
 				{{/each}}
 			</div>
 		{{else}}
-			<div class="nimble-selector__empty">No spells match the current filters.</div>
+			<div class="nimble-selector__empty">{{localize "NIMBLE_SELECTOR.spells.noSpells"}}</div>
 		{{/if}}
 	</div>
 
 	<div class="nimble-selector__actions">
 		<button type="button" class="nimble-selector__btn" data-action="cancel">
-			<i class="fa-solid fa-xmark"></i> Cancel
+			<i class="fa-solid fa-xmark"></i> {{localize "NIMBLE_SELECTOR.actions.cancel"}}
 		</button>
 		<button type="button" class="nimble-selector__btn" data-action="confirm"
 				{{#unless hasSelection}}disabled{{/unless}}>
-			<i class="fa-solid fa-check"></i> Grant Selected ({{selectedCount}})
+			<i class="fa-solid fa-check"></i> {{localize "NIMBLE_SELECTOR.spells.grantSelected"}} ({{selectedCount}})
 		</button>
 	</div>
 </section>

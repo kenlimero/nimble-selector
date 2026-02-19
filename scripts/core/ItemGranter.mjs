@@ -21,14 +21,8 @@ class ItemGranter {
 	async grantItemsByUuid(actor, uuids) {
 		if (!uuids.length) return [];
 
-		const itemDataArray = [];
-
-		for (const uuid of uuids) {
-			const itemData = await this.#prepareItemFromUuid(uuid);
-			if (itemData) {
-				itemDataArray.push(itemData);
-			}
-		}
+		const prepared = await Promise.all(uuids.map((uuid) => this.#prepareItemFromUuid(uuid)));
+		const itemDataArray = prepared.filter(Boolean);
 
 		if (!itemDataArray.length) return [];
 

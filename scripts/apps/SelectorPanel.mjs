@@ -1,4 +1,4 @@
-import { MODULE_ID, TEMPLATE_PATH, SCHOOL_ICONS } from '../utils/constants.mjs';
+import { MODULE_ID, TEMPLATE_PATH, SCHOOL_ICONS, capitalize } from '../utils/constants.mjs';
 import { ClassFeatureResolver } from '../data/ClassFeatureResolver.mjs';
 import { SpellSchoolResolver } from '../data/SpellSchoolResolver.mjs';
 import { SpellTierResolver } from '../data/SpellTierResolver.mjs';
@@ -95,28 +95,29 @@ class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 
 		const spellSchools = schoolAccess.granted.map((s) => ({
 			id: s,
-			label: s.charAt(0).toUpperCase() + s.slice(1),
+			label: capitalize(s),
 			icon: SCHOOL_ICONS[s] ?? 'fa-solid fa-sparkles',
 		}));
 
 		const spellCount = hasSpellcasting
-			? this.#compendiumBrowser.findSpellsBySchoolAndTier(realSchools, maxTier, hasUtility).length
+			? this.#compendiumBrowser.countSpellsBySchoolAndTier(realSchools, maxTier, hasUtility)
 			: 0;
 
 		// Equipment
 		const proficiencies = this.#proficiencyResolver.resolve(this.#classIdentifier);
 		const equipment = this.#proficiencyResolver.findAvailableEquipment(this.#classIdentifier);
 
+		const none = game.i18n.localize('NIMBLE_SELECTOR.panel.none');
 		const armorSummary = proficiencies.armor.length
 			? proficiencies.armor.join(', ')
-			: 'None';
+			: none;
 		const weaponSummary = proficiencies.weapons.length
 			? proficiencies.weapons.join(', ')
-			: 'None';
+			: none;
 
 		return {
 			actorName: this.#actor.name,
-			className: this.#classIdentifier.charAt(0).toUpperCase() + this.#classIdentifier.slice(1),
+			className: capitalize(this.#classIdentifier),
 			level: this.#level,
 			features,
 			hasSpellcasting,

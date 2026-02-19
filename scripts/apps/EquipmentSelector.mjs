@@ -1,4 +1,4 @@
-import { MODULE_ID, TEMPLATE_PATH } from '../utils/constants.mjs';
+import { MODULE_ID, TEMPLATE_PATH, capitalize } from '../utils/constants.mjs';
 import { EquipmentProficiencyResolver } from '../data/EquipmentProficiencyResolver.mjs';
 import { ItemGranter } from '../core/ItemGranter.mjs';
 
@@ -21,8 +21,11 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 	#actor;
 	#classIdentifier;
 	#allEquipment = [];
+	#proficiencies = null;
 	#selectedUuids = new Set();
 	#activeCategory = '';
+	#scrollTop = 0;
+	#dataLoaded = false;
 	#proficiencyResolver = new EquipmentProficiencyResolver();
 	#granter = new ItemGranter();
 
@@ -58,9 +61,15 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		this.#classIdentifier = classIdentifier;
 	}
 
-	async _prepareContext() {
-		const proficiencies = this.#proficiencyResolver.resolve(this.#classIdentifier);
+	#loadEquipmentData() {
+		if (this.#dataLoaded) return;
+		this.#proficiencies = this.#proficiencyResolver.resolve(this.#classIdentifier);
 		this.#allEquipment = this.#proficiencyResolver.findAvailableEquipment(this.#classIdentifier);
+		this.#dataLoaded = true;
+	}
+
+	async _prepareContext() {
+		this.#loadEquipmentData();
 
 		// Determine available categories
 		const availableTypes = new Set(this.#allEquipment.map((e) => e.objectType));
@@ -72,7 +81,7 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		}));
 
 		// Filter
-		let filteredEquipment = [...this.#allEquipment];
+		let filteredEquipment = this.#allEquipment;
 		if (this.#activeCategory) {
 			filteredEquipment = filteredEquipment.filter(
 				(e) => e.objectType === this.#activeCategory,
@@ -85,18 +94,18 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 			typeLabel: CATEGORY_CONFIG[e.objectType]?.label ?? e.objectType,
 		}));
 
-		const armorSummary = proficiencies.armor.length
-			? proficiencies.armor.join(', ')
-			: 'None';
-		const weaponSummary = proficiencies.weapons.length
-			? proficiencies.weapons.join(', ')
-			: 'None';
+		const armorSummary = this.#proficiencies.armor.length
+			? this.#proficiencies.armor.join(', ')
+			: game.i18n.localize('NIMBLE_SELECTOR.panel.none');
+		const weaponSummary = this.#proficiencies.weapons.length
+			? this.#proficiencies.weapons.join(', ')
+			: game.i18n.localize('NIMBLE_SELECTOR.panel.none');
 
 		const selectedCount = this.#selectedUuids.size;
 
 		return {
-			className: this.#classIdentifier,
-			proficiencySummary: `Armor: ${armorSummary} | Weapons: ${weaponSummary}`,
+			className: capitalize(this.#classIdentifier),
+			proficiencySummary: `${game.i18n.localize('NIMBLE_SELECTOR.panel.armor')}: ${armorSummary} | ${game.i18n.localize('NIMBLE_SELECTOR.panel.weapons')}: ${weaponSummary}`,
 			categories,
 			activeCategory: this.#activeCategory,
 			filteredEquipment,
@@ -105,9 +114,20 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		};
 	}
 
+	_onRender(context, options) {
+		const scrollArea = this.element.querySelector('.nimble-selector__scroll-area');
+		if (scrollArea) scrollArea.scrollTop = this.#scrollTop;
+	}
+
+	#saveScrollPosition() {
+		const scrollArea = this.element?.querySelector('.nimble-selector__scroll-area');
+		if (scrollArea) this.#scrollTop = scrollArea.scrollTop;
+	}
+
 	static #onFilterCategory(event, target) {
 		const category = target.dataset.category;
 		this.#activeCategory = this.#activeCategory === category ? '' : category;
+		this.#saveScrollPosition();
 		this.render();
 	}
 
@@ -120,6 +140,7 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		} else {
 			this.#selectedUuids.add(uuid);
 		}
+		this.#saveScrollPosition();
 		this.render();
 	}
 
@@ -129,7 +150,7 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 
 		await this.#granter.grantItemsByUuid(this.#actor, uuids);
 		this.#selectedUuids.clear();
-		ui.notifications.info(`Granted ${uuids.length} equipment item(s) to ${this.#actor.name}.`);
+		ui.notifications.info(game.i18n.format('NIMBLE_SELECTOR.notifications.grantedEquipment', { count: uuids.length, name: this.#actor.name }));
 		this.close();
 	}
 

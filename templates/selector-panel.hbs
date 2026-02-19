@@ -3,7 +3,7 @@
 		<i class="fa-solid fa-arrow-up-right-dots nimble-selector__header-icon"></i>
 		<div class="nimble-selector__header-info">
 			<h2 class="nimble-selector__header-title">{{actorName}}</h2>
-			<p class="nimble-selector__header-subtitle">{{className}} &mdash; Level {{level}}</p>
+			<p class="nimble-selector__header-subtitle">{{className}} &mdash; {{localize "NIMBLE_SELECTOR.panel.level"}} {{level}}</p>
 		</div>
 	</div>
 
@@ -11,7 +11,7 @@
 		{{!-- Features Section --}}
 		<div class="nimble-selector__section">
 			<div class="nimble-selector__section-header" data-action="openFeatures">
-				<span><i class="fa-solid fa-scroll"></i> Class Features</span>
+				<span><i class="fa-solid fa-scroll"></i> {{localize "NIMBLE_SELECTOR.panel.classFeatures"}}</span>
 				<span class="nimble-selector__section-badge">{{features.length}}</span>
 			</div>
 			<div class="nimble-selector__section-body">
@@ -22,16 +22,16 @@
 								<img class="nimble-selector__card-img" src="{{this.img}}" alt="{{this.name}}" />
 								<div class="nimble-selector__card-content">
 									<div class="nimble-selector__card-name">{{this.name}}</div>
-									<div class="nimble-selector__card-meta">Level {{this.level}}</div>
+									<div class="nimble-selector__card-meta">{{localize "NIMBLE_SELECTOR.panel.level"}} {{this.level}}</div>
 								</div>
 								{{#if this.alreadyOwned}}
-									<span class="nimble-selector__card-owned-tag">Owned</span>
+									<span class="nimble-selector__card-owned-tag">{{localize "NIMBLE_SELECTOR.panel.owned"}}</span>
 								{{/if}}
 							</div>
 						{{/each}}
 					</div>
 				{{else}}
-					<div class="nimble-selector__empty">No new features at this level.</div>
+					<div class="nimble-selector__empty">{{localize "NIMBLE_SELECTOR.panel.noFeatures"}}</div>
 				{{/if}}
 			</div>
 		</div>
@@ -40,7 +40,7 @@
 		{{#if hasSpellcasting}}
 		<div class="nimble-selector__section">
 			<div class="nimble-selector__section-header" data-action="openSpells">
-				<span><i class="fa-solid fa-hat-wizard"></i> Spells</span>
+				<span><i class="fa-solid fa-hat-wizard"></i> {{localize "NIMBLE_SELECTOR.panel.spells"}}</span>
 				<span class="nimble-selector__section-badge">{{spellCount}}</span>
 			</div>
 			<div class="nimble-selector__section-body">
@@ -55,10 +55,10 @@
 					</div>
 					<div class="nimble-selector__notification">
 						<i class="fa-solid fa-circle-info"></i>
-						Max spell tier: {{maxTier}}
+						{{localize "NIMBLE_SELECTOR.panel.maxTier"}}: {{maxTier}}
 					</div>
 				{{else}}
-					<div class="nimble-selector__empty">No spell schools available yet.</div>
+					<div class="nimble-selector__empty">{{localize "NIMBLE_SELECTOR.panel.noSchools"}}</div>
 				{{/if}}
 			</div>
 		</div>
@@ -67,13 +67,13 @@
 		{{!-- Equipment Section --}}
 		<div class="nimble-selector__section">
 			<div class="nimble-selector__section-header" data-action="openEquipment">
-				<span><i class="fa-solid fa-shield-halved"></i> Equipment</span>
+				<span><i class="fa-solid fa-shield-halved"></i> {{localize "NIMBLE_SELECTOR.panel.equipment"}}</span>
 				<span class="nimble-selector__section-badge">{{equipmentCount}}</span>
 			</div>
 			<div class="nimble-selector__section-body">
 				<div class="nimble-selector__notification">
 					<i class="fa-solid fa-circle-info"></i>
-					Armor: {{proficiencySummary.armor}} &mdash; Weapons: {{proficiencySummary.weapons}}
+					{{localize "NIMBLE_SELECTOR.panel.armor"}}: {{proficiencySummary.armor}} &mdash; {{localize "NIMBLE_SELECTOR.panel.weapons"}}: {{proficiencySummary.weapons}}
 				</div>
 			</div>
 		</div>
@@ -81,18 +81,18 @@
 
 	<div class="nimble-selector__actions">
 		<button type="button" class="nimble-selector__btn" data-action="openFeatures">
-			<i class="fa-solid fa-scroll"></i> Features
+			<i class="fa-solid fa-scroll"></i> {{localize "NIMBLE_SELECTOR.panel.features"}}
 		</button>
 		{{#if hasSpellcasting}}
 		<button type="button" class="nimble-selector__btn" data-action="openSpells">
-			<i class="fa-solid fa-hat-wizard"></i> Spells
+			<i class="fa-solid fa-hat-wizard"></i> {{localize "NIMBLE_SELECTOR.panel.spells"}}
 		</button>
 		{{/if}}
 		<button type="button" class="nimble-selector__btn" data-action="openEquipment">
-			<i class="fa-solid fa-shield-halved"></i> Equipment
+			<i class="fa-solid fa-shield-halved"></i> {{localize "NIMBLE_SELECTOR.panel.equipment"}}
 		</button>
 		<button type="button" class="nimble-selector__btn" data-action="closePanel">
-			<i class="fa-solid fa-xmark"></i> Close
+			<i class="fa-solid fa-xmark"></i> {{localize "NIMBLE_SELECTOR.panel.close"}}
 		</button>
 	</div>
 </section>

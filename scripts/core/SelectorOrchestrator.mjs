@@ -42,16 +42,19 @@ class SelectorOrchestrator {
 	getActorClassInfo(actor) {
 		if (actor.type !== 'character') return null;
 
-		// Find the class item on the actor
-		const classItem = actor.items.find((i) => i.type === 'class');
+		// Single pass over actor.items to find both class and subclass
+		let classItem = null;
+		let subclassItem = null;
+		for (const item of actor.items) {
+			if (item.type === 'class') classItem = item;
+			else if (item.type === 'subclass') subclassItem = item;
+			if (classItem && subclassItem) break;
+		}
 		if (!classItem) return null;
 
 		// Use the Nimble system's native identifier getter
 		const classIdentifier = classItem.identifier ?? classItem.name?.toLowerCase().trim().replace(/\s+/g, '-');
 		const level = classItem.system?.classLevel ?? 1;
-
-		// Find subclass
-		const subclassItem = actor.items.find((i) => i.type === 'subclass');
 		const subclassIdentifier = subclassItem
 			? (subclassItem.identifier ?? subclassItem.name?.toLowerCase().trim().replace(/\s+/g, '-'))
 			: null;
@@ -68,7 +71,7 @@ class SelectorOrchestrator {
 
 		const info = this.getActorClassInfo(actor);
 		if (!info) {
-			ui.notifications.warn('This character has no class assigned.');
+			ui.notifications.warn(game.i18n.localize('NIMBLE_SELECTOR.notifications.noClass'));
 			return;
 		}
 
@@ -93,7 +96,7 @@ class SelectorOrchestrator {
 
 		const info = this.getActorClassInfo(actor);
 		if (!info) {
-			ui.notifications.warn('This character has no class assigned.');
+			ui.notifications.warn(game.i18n.localize('NIMBLE_SELECTOR.notifications.noClass'));
 			return;
 		}
 

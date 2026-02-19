@@ -57,11 +57,13 @@ class CompendiumBrowser {
 			if (!this.#featureIndex.has(key)) {
 				this.#featureIndex.set(key, []);
 			}
+			const cls = entry.system?.class ?? '';
 			this.#featureIndex.get(key).push({
 				uuid: entry.uuid,
 				name: entry.name,
 				img: entry.img,
-				class: entry.system?.class ?? '',
+				class: cls,
+				_normalizedClass: this.#normalizeString(cls),
 				featureType: entry.system?.featureType ?? '',
 				group: entry.system?.group ?? '',
 				description: this.#extractDescription(entry.system?.description),
@@ -86,11 +88,14 @@ class CompendiumBrowser {
 				? props.includes('utilitySpell')
 				: (props instanceof Set ? props.has('utilitySpell') : false);
 
+			const school = entry.system?.school ?? '';
 			this.#spellIndex.set(entry.uuid, {
 				uuid: entry.uuid,
 				name: entry.name,
+				_normalizedName: this.#normalizeString(entry.name),
 				img: entry.img,
-				school: entry.system?.school ?? '',
+				school,
+				_normalizedSchool: this.#normalizeString(school),
 				tier: entry.system?.tier ?? 0,
 				isUtility,
 				description: this.#extractDescription(entry.system?.description),
@@ -110,11 +115,13 @@ class CompendiumBrowser {
 		});
 
 		for (const entry of index) {
+			const objectType = entry.system?.objectType ?? '';
 			this.#itemIndex.set(entry.uuid, {
 				uuid: entry.uuid,
 				name: entry.name,
 				img: entry.img,
-				objectType: entry.system?.objectType ?? '',
+				objectType,
+				_normalizedType: this.#normalizeString(objectType),
 				properties: entry.system?.properties ?? {},
 				description: this.#extractDescription(entry.system?.description),
 			});
@@ -145,7 +152,7 @@ class CompendiumBrowser {
 
 			// Prefer exact class match
 			let match = candidates.find(
-				(c) => this.#normalizeString(c.class) === normalizedClass,
+				(c) => c._normalizedClass === normalizedClass,
 			);
 
 			// Fall back to any match
@@ -184,8 +191,7 @@ class CompendiumBrowser {
 			// Skip utility spells unless character has utility access
 			if (spell.isUtility && !includeUtility) continue;
 
-			const normalizedSchool = this.#normalizeString(spell.school);
-			if (normalizedSchools.has(normalizedSchool) && spell.tier <= maxTier) {
+			if (normalizedSchools.has(spell._normalizedSchool) && spell.tier <= maxTier) {
 				results.push(spell);
 			}
 		}
@@ -199,6 +205,29 @@ class CompendiumBrowser {
 	}
 
 	/**
+	 * Count spells matching the given schools and max tier (without allocating a results array).
+	 * @param {string[]} schools - Spell school identifiers (real schools only, not "utility")
+	 * @param {number} maxTier - Maximum spell tier (inclusive)
+	 * @param {boolean} [includeUtility=false] - Whether to include utility-flagged spells
+	 * @returns {number}
+	 */
+	countSpellsBySchoolAndTier(schools, maxTier, includeUtility = false) {
+		const normalizedSchools = new Set(
+			schools.filter((s) => s !== 'utility').map((s) => this.#normalizeString(s)),
+		);
+		let count = 0;
+
+		for (const spell of this.#spellIndex.values()) {
+			if (spell.isUtility && !includeUtility) continue;
+			if (normalizedSchools.has(spell._normalizedSchool) && spell.tier <= maxTier) {
+				count++;
+			}
+		}
+
+		return count;
+	}
+
+	/**
 	 * Find equipment items by type.
 	 * @param {string[]} objectTypes - e.g. ["weapon", "armor", "shield"]
 	 * @returns {Array<{uuid: string, name: string, img: string, objectType: string}>}
@@ -208,7 +237,7 @@ class CompendiumBrowser {
 		const results = [];
 
 		for (const item of this.#itemIndex.values()) {
-			if (normalizedTypes.has(this.#normalizeString(item.objectType))) {
+			if (normalizedTypes.has(item._normalizedType)) {
 				results.push(item);
 			}
 		}

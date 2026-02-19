@@ -2,17 +2,17 @@
 	<div class="nimble-selector__header">
 		<i class="fa-solid fa-scroll nimble-selector__header-icon"></i>
 		<div class="nimble-selector__header-info">
-			<h2 class="nimble-selector__header-title">Class Features</h2>
-			<p class="nimble-selector__header-subtitle">{{className}} &mdash; Level {{fromLevel}}{{#if isRange}}&ndash;{{toLevel}}{{/if}}</p>
+			<h2 class="nimble-selector__header-title">{{localize "NIMBLE_SELECTOR.features.title"}}</h2>
+			<p class="nimble-selector__header-subtitle">{{className}} &mdash; {{localize "NIMBLE_SELECTOR.panel.level"}} {{fromLevel}}{{#if isRange}}&ndash;{{toLevel}}{{/if}}</p>
 		</div>
 	</div>
 
 	<div class="nimble-selector__bulk-actions">
 		<button type="button" class="nimble-selector__btn nimble-selector__btn--small" data-action="selectAll">
-			<i class="fa-solid fa-check-double"></i> Select All
+			<i class="fa-solid fa-check-double"></i> {{localize "NIMBLE_SELECTOR.features.selectAll"}}
 		</button>
 		<button type="button" class="nimble-selector__btn nimble-selector__btn--small" data-action="deselectAll">
-			<i class="fa-solid fa-xmark"></i> Deselect All
+			<i class="fa-solid fa-xmark"></i> {{localize "NIMBLE_SELECTOR.features.deselectAll"}}
 		</button>
 	</div>
 
@@ -21,12 +21,12 @@
 		<button type="button"
 				class="nimble-selector__filter-btn {{#unless activeGroup}}nimble-selector__filter-btn--active{{/unless}}"
 				data-action="filterGroup" data-group="">
-			<i class="fa-solid fa-layer-group"></i> All
+			<i class="fa-solid fa-layer-group"></i> {{localize "NIMBLE_SELECTOR.features.all"}}
 		</button>
 		<button type="button"
 				class="nimble-selector__filter-btn {{#if classFeatureFilterActive}}nimble-selector__filter-btn--active{{/if}}"
 				data-action="filterGroup" data-group="__class-features__">
-			<i class="fa-solid fa-scroll"></i> Class Features
+			<i class="fa-solid fa-scroll"></i> {{localize "NIMBLE_SELECTOR.features.title"}}
 		</button>
 		{{#each selectableGroups}}
 			<button type="button"
@@ -41,7 +41,7 @@
 	<div class="nimble-selector__scroll-area">
 		{{#each levelGroups}}
 			<div class="nimble-selector__level-group">
-				<div class="nimble-selector__level-label">Level {{this.level}}</div>
+				<div class="nimble-selector__level-label">{{localize "NIMBLE_SELECTOR.panel.level"}} {{this.level}}</div>
 				<div class="nimble-selector__card-grid">
 					{{#each this.features}}
 						<div class="nimble-selector__card {{#if this.selected}}nimble-selector__card--selected{{/if}} {{#if this.alreadyOwned}}nimble-selector__card--owned{{/if}}"
@@ -59,12 +59,12 @@
 											<i class="fa-solid fa-list-check"></i> {{this.selectableGroup}}
 										</span>
 									{{else}}
-										{{#if this.matched}}Compendium match{{else}}Not found in compendium{{/if}}
+										{{#if this.matched}}{{localize "NIMBLE_SELECTOR.features.compendiumMatch"}}{{else}}{{localize "NIMBLE_SELECTOR.features.notFound"}}{{/if}}
 									{{/if}}
 								</div>
 							</div>
 							{{#if this.alreadyOwned}}
-								<span class="nimble-selector__card-owned-tag">Owned</span>
+								<span class="nimble-selector__card-owned-tag">{{localize "NIMBLE_SELECTOR.panel.owned"}}</span>
 							{{/if}}
 						</div>
 					{{/each}}
@@ -73,17 +73,17 @@
 		{{/each}}
 
 		{{#unless levelGroups.length}}
-			<div class="nimble-selector__empty">No features available for the selected levels.</div>
+			<div class="nimble-selector__empty">{{localize "NIMBLE_SELECTOR.features.noFeatures"}}</div>
 		{{/unless}}
 	</div>
 
 	<div class="nimble-selector__actions">
 		<button type="button" class="nimble-selector__btn" data-action="cancel">
-			<i class="fa-solid fa-xmark"></i> Cancel
+			<i class="fa-solid fa-xmark"></i> {{localize "NIMBLE_SELECTOR.actions.cancel"}}
 		</button>
 		<button type="button" class="nimble-selector__btn" data-action="confirm"
 				{{#unless hasSelection}}disabled{{/unless}}>
-			<i class="fa-solid fa-check"></i> Grant Selected ({{selectedCount}})
+			<i class="fa-solid fa-check"></i> {{localize "NIMBLE_SELECTOR.features.grantSelected"}} ({{selectedCount}})
 		</button>
 	</div>
 </section>

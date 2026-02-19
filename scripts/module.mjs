@@ -49,13 +49,13 @@ function _getDocumentId(li) {
  */
 function _openForControlledToken() {
 	if (!orchestrator) {
-		ui.notifications.warn('Nimble Selector is still loading…');
+		ui.notifications.warn(game.i18n.localize('NIMBLE_SELECTOR.notifications.loading'));
 		return;
 	}
 	const token = canvas.tokens?.controlled?.[0];
 	const actor = token?.actor ?? game.user?.character;
 	if (!actor || actor.type !== 'character') {
-		ui.notifications.info('Select a character token or set a default character first.');
+		ui.notifications.info(game.i18n.localize('NIMBLE_SELECTOR.notifications.selectToken'));
 		return;
 	}
 	orchestrator.openForActor(actor);
@@ -135,7 +135,7 @@ function _patchCharacterSheetControls() {
 				if (!target.DEFAULT_OPTIONS.actions.nimbleSelector) {
 					target.DEFAULT_OPTIONS.actions.nimbleSelector = function () {
 						if (!orchestrator) {
-							ui.notifications.warn('Nimble Selector is still loading…');
+							ui.notifications.warn(game.i18n.localize('NIMBLE_SELECTOR.notifications.loading'));
 							return;
 						}
 						orchestrator.openForActor(this.document);

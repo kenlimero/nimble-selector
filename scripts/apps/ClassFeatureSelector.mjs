@@ -1,4 +1,4 @@
-import { MODULE_ID, TEMPLATE_PATH } from '../utils/constants.mjs';
+import { MODULE_ID, TEMPLATE_PATH, capitalize } from '../utils/constants.mjs';
 import { ClassFeatureResolver } from '../data/ClassFeatureResolver.mjs';
 import { ItemGranter } from '../core/ItemGranter.mjs';
 
@@ -119,7 +119,7 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		const selectedCount = this.#selectedUuids.size;
 
 		return {
-			className: this.#classIdentifier,
+			className: capitalize(this.#classIdentifier),
 			fromLevel: this.#fromLevel,
 			toLevel: this.#toLevel,
 			isRange: this.#fromLevel !== this.#toLevel,
@@ -197,7 +197,7 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 
 		await this.#granter.grantItemsByUuid(this.#actor, uuids);
 		this.#selectedUuids.clear();
-		ui.notifications.info(`Granted ${uuids.length} class feature(s) to ${this.#actor.name}.`);
+		ui.notifications.info(game.i18n.format('NIMBLE_SELECTOR.notifications.grantedFeatures', { count: uuids.length, name: this.#actor.name }));
 		this.close();
 	}
 

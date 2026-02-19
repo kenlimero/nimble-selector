@@ -2,7 +2,7 @@
 	<div class="nimble-selector__header">
 		<i class="fa-solid fa-shield-halved nimble-selector__header-icon"></i>
 		<div class="nimble-selector__header-info">
-			<h2 class="nimble-selector__header-title">Equipment Selection</h2>
+			<h2 class="nimble-selector__header-title">{{localize "NIMBLE_SELECTOR.equipment.title"}}</h2>
 			<p class="nimble-selector__header-subtitle">{{className}} &mdash; {{proficiencySummary}}</p>
 		</div>
 	</div>
@@ -12,7 +12,7 @@
 		<button type="button"
 				class="nimble-selector__category-tab {{#unless activeCategory}}nimble-selector__category-tab--active{{/unless}}"
 				data-action="filterCategory" data-category="">
-			All
+			{{localize "NIMBLE_SELECTOR.equipment.all"}}
 		</button>
 		{{#each categories}}
 			<button type="button"
@@ -42,17 +42,17 @@
 				{{/each}}
 			</div>
 		{{else}}
-			<div class="nimble-selector__empty">No equipment matches the current filter.</div>
+			<div class="nimble-selector__empty">{{localize "NIMBLE_SELECTOR.equipment.noEquipment"}}</div>
 		{{/if}}
 	</div>
 
 	<div class="nimble-selector__actions">
 		<button type="button" class="nimble-selector__btn" data-action="cancel">
-			<i class="fa-solid fa-xmark"></i> Cancel
+			<i class="fa-solid fa-xmark"></i> {{localize "NIMBLE_SELECTOR.actions.cancel"}}
 		</button>
 		<button type="button" class="nimble-selector__btn" data-action="confirm"
 				{{#unless hasSelection}}disabled{{/unless}}>
-			<i class="fa-solid fa-check"></i> Grant Selected ({{selectedCount}})
+			<i class="fa-solid fa-check"></i> {{localize "NIMBLE_SELECTOR.equipment.grantSelected"}} ({{selectedCount}})
 		</button>
 	</div>
 </section>
