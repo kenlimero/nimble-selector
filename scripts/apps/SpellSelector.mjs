@@ -20,6 +20,7 @@ class SpellSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 	#ownedSpellKeys = new Set();
 	#activeSchool = '';
 	#activeTier = null;
+	#scrollTop = 0;
 	#schoolResolver = new SpellSchoolResolver();
 	#tierResolver = new SpellTierResolver();
 	#compendiumBrowser = CompendiumBrowser.instance;
@@ -151,9 +152,20 @@ class SpellSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		};
 	}
 
+	_onRender(context, options) {
+		const scrollArea = this.element.querySelector('.nimble-selector__scroll-area');
+		if (scrollArea) scrollArea.scrollTop = this.#scrollTop;
+	}
+
+	#saveScrollPosition() {
+		const scrollArea = this.element?.querySelector('.nimble-selector__scroll-area');
+		if (scrollArea) this.#scrollTop = scrollArea.scrollTop;
+	}
+
 	static #onFilterSchool(event, target) {
 		const school = target.dataset.school;
 		this.#activeSchool = this.#activeSchool === school ? '' : school;
+		this.#saveScrollPosition();
 		this.render();
 	}
 
@@ -165,6 +177,7 @@ class SpellSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 			const parsed = Number(tier);
 			this.#activeTier = this.#activeTier === parsed ? null : parsed;
 		}
+		this.#saveScrollPosition();
 		this.render();
 	}
 
@@ -182,6 +195,7 @@ class SpellSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		} else {
 			this.#selectedUuids.add(uuid);
 		}
+		this.#saveScrollPosition();
 		this.render();
 	}
 
