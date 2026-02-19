@@ -8,7 +8,9 @@
 			"autoOpenOnLevelUp": "Auto-open on Level Up",
 			"autoOpenOnLevelUpHint": "Automatically open the selector panel when a character levels up.",
 			"autoSelectFeatures": "Auto-select Features",
-			"autoSelectFeaturesHint": "Automatically pre-select new class features that are not yet on the character sheet."
+			"autoSelectFeaturesHint": "Automatically pre-select new class features that are not yet on the character sheet.",
+			"showFeaturesInPanel": "Show Features in Panel",
+			"showFeaturesInPanelHint": "Display the list of class features directly in the main selector panel."
 		},
 		"panel": {
 			"title": "Nimble Selector",

@@ -115,11 +115,14 @@ class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 			? proficiencies.weapons.join(', ')
 			: none;
 
+		const showFeaturesInPanel = game.settings.get(MODULE_ID, 'showFeaturesInPanel');
+
 		return {
 			actorName: this.#actor.name,
 			className: capitalize(this.#classIdentifier),
 			level: this.#level,
 			features,
+			showFeaturesInPanel,
 			hasSpellcasting,
 			spellSchools,
 			spellCount,

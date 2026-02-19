@@ -14,6 +14,7 @@
 				<span><i class="fa-solid fa-scroll"></i> {{localize "NIMBLE_SELECTOR.panel.classFeatures"}}</span>
 				<span class="nimble-selector__section-badge">{{features.length}}</span>
 			</div>
+			{{#if showFeaturesInPanel}}
 			<div class="nimble-selector__section-body">
 				{{#if features.length}}
 					<div class="nimble-selector__card-grid">
@@ -40,6 +41,7 @@
 					<div class="nimble-selector__empty">{{localize "NIMBLE_SELECTOR.panel.noFeatures"}}</div>
 				{{/if}}
 			</div>
+			{{/if}}
 		</div>
 
 		{{!-- Spells Section --}}
