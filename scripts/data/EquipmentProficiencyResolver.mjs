@@ -36,6 +36,10 @@ class EquipmentProficiencyResolver {
 		if (proficiencies.armor.includes('shield')) objectTypes.add('shield');
 		if (proficiencies.weapons.length > 0) objectTypes.add('weapon');
 
+		// Consumables and misc items are available to all classes
+		objectTypes.add('consumable');
+		objectTypes.add('misc');
+
 		return this.#compendiumBrowser.findEquipmentByType([...objectTypes]);
 	}
 
