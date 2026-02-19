@@ -16,6 +16,23 @@
 		</button>
 	</div>
 
+	{{#if hasSelectableGroups}}
+	<div class="nimble-selector__filter-bar">
+		<button type="button"
+				class="nimble-selector__filter-btn {{#unless activeGroup}}nimble-selector__filter-btn--active{{/unless}}"
+				data-action="filterGroup" data-group="">
+			<i class="fa-solid fa-layer-group"></i> All
+		</button>
+		{{#each selectableGroups}}
+			<button type="button"
+					class="nimble-selector__filter-btn {{#if this.active}}nimble-selector__filter-btn--active{{/if}}"
+					data-action="filterGroup" data-group="{{this.id}}">
+				<i class="fa-solid fa-list-check"></i> {{this.label}}
+			</button>
+		{{/each}}
+	</div>
+	{{/if}}
+
 	<div class="nimble-selector__scroll-area">
 		{{#each levelGroups}}
 			<div class="nimble-selector__level-group">
@@ -31,7 +48,13 @@
 							<div class="nimble-selector__card-content">
 								<div class="nimble-selector__card-name">{{this.name}}</div>
 								<div class="nimble-selector__card-meta">
-									{{#if this.matched}}Compendium match{{else}}Not found in compendium{{/if}}
+									{{#if this.selectableGroup}}
+										<span class="nimble-selector__group-badge">
+											<i class="fa-solid fa-list-check"></i> {{this.selectableGroup}}
+										</span>
+									{{else}}
+										{{#if this.matched}}Compendium match{{else}}Not found in compendium{{/if}}
+									{{/if}}
 								</div>
 							</div>
 							{{#if this.alreadyOwned}}

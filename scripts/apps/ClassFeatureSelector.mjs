@@ -18,6 +18,7 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 	#selectedUuids = new Set();
 	#initialSelectionDone = false;
 	#scrollTop = 0;
+	#activeGroup = '';
 	#resolver = new ClassFeatureResolver();
 	#granter = new ItemGranter();
 
@@ -34,6 +35,7 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 			height: 'auto',
 		},
 		actions: {
+			filterGroup: ClassFeatureSelector.#onFilterGroup,
 			toggleFeature: ClassFeatureSelector.#onToggleFeature,
 			selectAll: ClassFeatureSelector.#onSelectAll,
 			deselectAll: ClassFeatureSelector.#onDeselectAll,
@@ -67,19 +69,38 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 
 		this.#features = this.#resolver.markOwnedFeatures(this.#actor, this.#features);
 
-		// Auto-select features not already owned (only on first render)
+		// Auto-select only regular features, not selectable options (only on first render)
 		if (!this.#initialSelectionDone) {
 			for (const f of this.#features) {
-				if (!f.alreadyOwned && f.matched) {
+				if (!f.alreadyOwned && f.matched && !f.selectableGroup) {
 					this.#selectedUuids.add(f.uuid);
 				}
 			}
 			this.#initialSelectionDone = true;
 		}
 
+		// Build selectable group filter buttons (merged by groupId)
+		const groupIdSet = new Set();
+		for (const f of this.#features) {
+			if (f.selectableGroupId) groupIdSet.add(f.selectableGroupId);
+		}
+		const selectableGroups = [...groupIdSet].map((id) => ({
+			id,
+			label: id,
+			active: this.#activeGroup === id,
+		}));
+
+		// Apply group filter
+		let filteredFeatures = this.#features;
+		if (this.#activeGroup) {
+			filteredFeatures = this.#features.filter(
+				(f) => f.selectableGroupId === this.#activeGroup,
+			);
+		}
+
 		// Group by level
 		const levelMap = new Map();
-		for (const feature of this.#features) {
+		for (const feature of filteredFeatures) {
 			if (!levelMap.has(feature.level)) {
 				levelMap.set(feature.level, []);
 			}
@@ -103,6 +124,9 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 			levelGroups,
 			selectedCount,
 			hasSelection: selectedCount > 0,
+			selectableGroups,
+			activeGroup: this.#activeGroup,
+			hasSelectableGroups: selectableGroups.length > 0,
 		};
 	}
 
@@ -114,6 +138,13 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 	#saveScrollPosition() {
 		const scrollArea = this.element?.querySelector('.nimble-selector__scroll-area');
 		if (scrollArea) this.#scrollTop = scrollArea.scrollTop;
+	}
+
+	static #onFilterGroup(event, target) {
+		const group = target.dataset.group;
+		this.#activeGroup = this.#activeGroup === group ? '' : group;
+		this.#saveScrollPosition();
+		this.render();
 	}
 
 	static #onToggleFeature(event, target) {
@@ -135,16 +166,24 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 
 	static #onSelectAll() {
 		for (const f of this.#features) {
-			if (!f.alreadyOwned && f.matched) {
-				this.#selectedUuids.add(f.uuid);
-			}
+			if (f.alreadyOwned || !f.matched) continue;
+			if (this.#activeGroup && f.selectableGroupId !== this.#activeGroup) continue;
+			this.#selectedUuids.add(f.uuid);
 		}
 		this.#saveScrollPosition();
 		this.render();
 	}
 
 	static #onDeselectAll() {
-		this.#selectedUuids.clear();
+		if (this.#activeGroup) {
+			for (const f of this.#features) {
+				if (f.selectableGroupId === this.#activeGroup) {
+					this.#selectedUuids.delete(f.uuid);
+				}
+			}
+		} else {
+			this.#selectedUuids.clear();
+		}
 		this.#saveScrollPosition();
 		this.render();
 	}

@@ -173,6 +173,26 @@
 	text-transform: uppercase;
 }
 
+/* --- Selectable Group Badge --- */
+
+.nimble-selector__group-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.2rem;
+	background: var(--nimble-hint-background-color, hsla(223, 14%, 45%, 0.1));
+	border: 1px solid var(--nimble-hint-border-color, hsla(223, 14%, 45%, 0.2));
+	border-radius: 3px;
+	padding: 0.05rem 0.4rem;
+	font-size: var(--nimble-xxs-text, 0.579rem);
+	font-weight: 600;
+	color: var(--nimble-accent-color, hsl(223, 14%, 45%));
+	white-space: nowrap;
+}
+
+.nimble-selector__group-badge i {
+	font-size: 0.55rem;
+}
+
 /* --- Level Group --- */
 
 .nimble-selector__level-group {
