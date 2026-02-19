@@ -22,7 +22,13 @@
 								<img class="nimble-selector__card-img" src="{{this.img}}" alt="{{this.name}}" />
 								<div class="nimble-selector__card-content">
 									<div class="nimble-selector__card-name">{{this.name}}</div>
-									<div class="nimble-selector__card-meta">{{localize "NIMBLE_SELECTOR.panel.level"}} {{this.level}}</div>
+									<div class="nimble-selector__card-meta">
+									{{#if this.selectableGroup}}
+										<i class="fa-solid fa-list-check"></i> {{this.selectableGroup}}
+									{{else}}
+										{{localize "NIMBLE_SELECTOR.panel.level"}} {{this.level}}
+									{{/if}}
+								</div>
 								</div>
 								{{#if this.alreadyOwned}}
 									<span class="nimble-selector__card-owned-tag">{{localize "NIMBLE_SELECTOR.panel.owned"}}</span>
