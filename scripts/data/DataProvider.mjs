@@ -2,14 +2,12 @@ import { DATA_PATH } from '../utils/constants.mjs';
 
 /**
  * Singleton that loads and caches the JSON data files.
- * Provides lookup methods for class features, spell schools, spell tiers,
+ * Provides lookup methods for spell schools, spell tiers,
  * and equipment proficiencies.
  */
 class DataProvider {
 	static #instance = null;
 
-	#classFeatures = null;
-	#selectableFeatures = null;
 	#spellSchools = null;
 	#spellTiers = null;
 	#equipmentProficiencies = null;
@@ -35,16 +33,12 @@ class DataProvider {
 	async load() {
 		if (this.#loaded) return;
 
-		const [classFeatures, selectableFeatures, spellSchools, spellTiers, equipmentProficiencies] = await Promise.all([
-			this.#fetchJSON('class-features.json'),
-			this.#fetchJSON('class-selectable-features.json'),
+		const [spellSchools, spellTiers, equipmentProficiencies] = await Promise.all([
 			this.#fetchJSON('spell-schools.json'),
 			this.#fetchJSON('spell-tiers.json'),
 			this.#fetchJSON('equipment-proficiencies.json'),
 		]);
 
-		this.#classFeatures = classFeatures;
-		this.#selectableFeatures = selectableFeatures;
 		this.#spellSchools = spellSchools;
 		this.#spellTiers = spellTiers;
 		this.#equipmentProficiencies = equipmentProficiencies;
@@ -63,58 +57,6 @@ class DataProvider {
 			console.error(`nimble-selector | Error loading ${filename}:`, err);
 			return {};
 		}
-	}
-
-	/**
-	 * Get feature names for a specific class at a specific level.
-	 * @param {string} classIdentifier - e.g. "berserker", "mage"
-	 * @param {number} level - Character level (1-20)
-	 * @param {string|null} subclassIdentifier - e.g. "path-of-the-mountainheart"
-	 * @returns {string[]} Array of feature names
-	 */
-	getFeaturesForLevel(classIdentifier, level, subclassIdentifier = null) {
-		const classData = this.#classFeatures?.[classIdentifier];
-		if (!classData) return [];
-
-		const features = [];
-		const baseFeatures = classData.base?.[String(level)];
-		if (baseFeatures) features.push(...baseFeatures);
-
-		if (subclassIdentifier) {
-			const subFeatures = classData.subclasses?.[subclassIdentifier]?.[String(level)];
-			if (subFeatures) features.push(...subFeatures);
-		}
-
-		return features;
-	}
-
-	/**
-	 * Get feature names for a class across a range of levels (inclusive).
-	 * @param {string} classIdentifier
-	 * @param {number} fromLevel
-	 * @param {number} toLevel
-	 * @param {string|null} subclassIdentifier
-	 * @returns {Map<number, string[]>} Map of level -> feature names
-	 */
-	getFeaturesForRange(classIdentifier, fromLevel, toLevel, subclassIdentifier = null) {
-		const result = new Map();
-		for (let level = fromLevel; level <= toLevel; level++) {
-			const features = this.getFeaturesForLevel(classIdentifier, level, subclassIdentifier);
-			if (features.length > 0) {
-				result.set(level, features);
-			}
-		}
-		return result;
-	}
-
-	/**
-	 * Get selectable options for a feature if it is a selectable feature group.
-	 * @param {string} classIdentifier - e.g. "berserker", "hunter"
-	 * @param {string} featureName - e.g. "Thrill of the Hunt"
-	 * @returns {string[]|null} Array of option names, or null if not selectable
-	 */
-	getSelectableOptions(classIdentifier, featureName) {
-		return this.#selectableFeatures?.[classIdentifier]?.[featureName] ?? null;
 	}
 
 	/**

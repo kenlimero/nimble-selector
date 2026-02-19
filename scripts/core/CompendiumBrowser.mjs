@@ -8,6 +8,7 @@ class CompendiumBrowser {
 	static #instance = null;
 
 	#featureIndex = new Map();
+	#featureByClassIndex = new Map();
 	#spellIndex = new Map();
 	#itemIndex = new Map();
 	#initialized = false;
@@ -49,25 +50,37 @@ class CompendiumBrowser {
 		}
 
 		const index = await pack.getIndex({
-			fields: ['system.class', 'system.featureType', 'system.group', 'system.description'],
+			fields: ['system.class', 'system.featureType', 'system.group', 'system.description', 'system.gainedAtLevels', 'system.subclass'],
 		});
 
 		for (const entry of index) {
-			const key = this.#normalizeString(entry.name);
-			if (!this.#featureIndex.has(key)) {
-				this.#featureIndex.set(key, []);
-			}
 			const cls = entry.system?.class ?? '';
-			this.#featureIndex.get(key).push({
+			const normalizedClass = this.#normalizeString(cls);
+			const featureData = {
 				uuid: entry.uuid,
 				name: entry.name,
 				img: entry.img,
 				class: cls,
-				_normalizedClass: this.#normalizeString(cls),
+				_normalizedClass: normalizedClass,
 				featureType: entry.system?.featureType ?? '',
 				group: entry.system?.group ?? '',
 				description: this.#extractDescription(entry.system?.description),
-			});
+				gainedAtLevels: entry.system?.gainedAtLevels ?? [],
+				subclass: entry.system?.subclass ?? false,
+			};
+
+			// Name-based index
+			const key = this.#normalizeString(entry.name);
+			if (!this.#featureIndex.has(key)) {
+				this.#featureIndex.set(key, []);
+			}
+			this.#featureIndex.get(key).push(featureData);
+
+			// Class-based index
+			if (!this.#featureByClassIndex.has(normalizedClass)) {
+				this.#featureByClassIndex.set(normalizedClass, []);
+			}
+			this.#featureByClassIndex.get(normalizedClass).push(featureData);
 		}
 	}
 
@@ -170,6 +183,58 @@ class CompendiumBrowser {
 		}
 
 		return results;
+	}
+
+	/**
+	 * Get class features organized by progression and selectable groups
+	 * for a given class and level range.
+	 * @param {string} classIdentifier - e.g. "berserker"
+	 * @param {number} fromLevel - Start of level range (inclusive)
+	 * @param {number} toLevel - End of level range (inclusive)
+	 * @param {string|null} subclassIdentifier - e.g. "path-of-the-mountainheart"
+	 * @returns {{ progression: Array<{uuid, name, img, description, level, group}>, selectableGroups: Map<string, Array<{uuid, name, img, description, gainedAtLevels}>> }}
+	 */
+	getClassFeatures(classIdentifier, fromLevel, toLevel, subclassIdentifier = null) {
+		const normalizedClass = this.#normalizeString(classIdentifier);
+		const features = this.#featureByClassIndex.get(normalizedClass) ?? [];
+
+		const progression = [];
+		const selectableGroups = new Map();
+
+		for (const f of features) {
+			const levelsInRange = f.gainedAtLevels.filter((l) => l >= fromLevel && l <= toLevel);
+			if (levelsInRange.length === 0) continue;
+
+			const isProgression = f.group.endsWith('-progression');
+			const isSubclass = f.subclass;
+
+			// Skip subclass features that don't match the selected subclass
+			if (isSubclass && (!subclassIdentifier || f.group !== subclassIdentifier)) continue;
+
+			// Skip non-subclass features from subclass groups
+			if (!isSubclass && !isProgression) {
+				// This is a selectable group feature
+				if (!selectableGroups.has(f.group)) {
+					selectableGroups.set(f.group, []);
+				}
+				selectableGroups.get(f.group).push(f);
+				continue;
+			}
+
+			// Progression or matching subclass feature: add once per level in range
+			for (const level of levelsInRange) {
+				progression.push({
+					uuid: f.uuid,
+					name: f.name,
+					img: f.img,
+					description: f.description,
+					level,
+					group: f.group,
+				});
+			}
+		}
+
+		return { progression, selectableGroups };
 	}
 
 	/**

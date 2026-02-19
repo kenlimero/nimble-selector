@@ -1,18 +1,15 @@
-import { DataProvider } from './DataProvider.mjs';
 import { CompendiumBrowser } from '../core/CompendiumBrowser.mjs';
 import { buildOwnedItemKeys } from '../utils/constants.mjs';
 
 /**
- * Resolves class features for a given class and level by cross-referencing
- * the JSON data (class+level → feature names) with the compendium browser
- * (feature names → UUIDs).
+ * Resolves class features for a given class and level range by querying
+ * the compendium browser directly (features carry their own class, group,
+ * level and subclass metadata).
  */
 class ClassFeatureResolver {
-	#dataProvider;
 	#compendiumBrowser;
 
 	constructor() {
-		this.#dataProvider = DataProvider.instance;
 		this.#compendiumBrowser = CompendiumBrowser.instance;
 	}
 
@@ -25,7 +22,7 @@ class ClassFeatureResolver {
 	 * @returns {Array<{uuid: string|null, name: string, img: string, level: number, matched: boolean, selectableGroup: string|null, selectableGroupId: string|null}>}
 	 */
 	resolveRange(classIdentifier, fromLevel, toLevel, subclassIdentifier = null) {
-		const featuresByLevel = this.#dataProvider.getFeaturesForRange(
+		const { progression, selectableGroups } = this.#compendiumBrowser.getClassFeatures(
 			classIdentifier,
 			fromLevel,
 			toLevel,
@@ -33,41 +30,47 @@ class ClassFeatureResolver {
 		);
 
 		const results = [];
-		for (const [level, featureNames] of featuresByLevel) {
-			// Expand selectable feature groups into their individual options
-			const expandedEntries = [];
-			for (const name of featureNames) {
-				let options = this.#dataProvider.getSelectableOptions(classIdentifier, name);
-				let groupLabel = name;
-				let groupId = name;
 
-				// Features with numeric suffix like (2) may refer to a selectable group
-				if (!options) {
-					const baseName = name.replace(/\s*\(\d+\)$/, '');
-					if (baseName !== name) {
-						options = this.#dataProvider.getSelectableOptions(classIdentifier, baseName);
-						if (options) groupId = baseName;
-					}
-				}
+		// Add progression / subclass features (already expanded per level)
+		for (const f of progression) {
+			results.push({
+				uuid: f.uuid,
+				name: f.name,
+				img: f.img,
+				level: f.level,
+				matched: true,
+				selectableGroup: null,
+				selectableGroupId: null,
+				description: f.description,
+			});
+		}
 
-				if (options) {
-					for (const optionName of options) {
-						expandedEntries.push({ name: optionName, selectableGroup: groupLabel, selectableGroupId: groupId });
-					}
-				} else {
-					expandedEntries.push({ name, selectableGroup: null, selectableGroupId: null });
+		// Add selectable group features, repeated at each applicable level in range
+		for (const [groupId, features] of selectableGroups) {
+			const groupLabel = ClassFeatureResolver.#slugToLabel(groupId);
+
+			// Collect all distinct levels in range across all features of this group
+			const groupLevels = new Set();
+			for (const f of features) {
+				for (const l of f.gainedAtLevels) {
+					if (l >= fromLevel && l <= toLevel) groupLevels.add(l);
 				}
 			}
 
-			const nameStrings = expandedEntries.map((e) => e.name);
-			const matches = this.#compendiumBrowser.findFeaturesByName(nameStrings, classIdentifier);
-			for (let i = 0; i < matches.length; i++) {
-				results.push({
-					...matches[i],
-					level,
-					selectableGroup: expandedEntries[i].selectableGroup,
-					selectableGroupId: expandedEntries[i].selectableGroupId,
-				});
+			// For each applicable level, include all options from this group
+			for (const level of groupLevels) {
+				for (const f of features) {
+					results.push({
+						uuid: f.uuid,
+						name: f.name,
+						img: f.img,
+						level,
+						matched: true,
+						selectableGroup: groupLabel,
+						selectableGroupId: groupId,
+						description: f.description,
+					});
+				}
 			}
 		}
 
@@ -89,6 +92,18 @@ class ClassFeatureResolver {
 				ownedKeys.has(f.name.toLowerCase().trim()) ||
 				(f.uuid && ownedKeys.has(f.uuid)),
 		}));
+	}
+
+	/**
+	 * Convert a kebab-case group slug to a human-readable label.
+	 * @param {string} slug - e.g. "savage-arsenal"
+	 * @returns {string} e.g. "Savage Arsenal"
+	 */
+	static #slugToLabel(slug) {
+		return slug
+			.split('-')
+			.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+			.join(' ');
 	}
 }
 
