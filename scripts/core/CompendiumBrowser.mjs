@@ -174,13 +174,15 @@ class CompendiumBrowser {
 		}
 
 		const index = await pack.getIndex({
-			fields: ['system.objectType', 'system.properties', 'system.description', 'system.activation'],
+			fields: ['system.objectType', 'system.properties', 'system.description', 'system.activation', 'system.price'],
 		});
 
 		for (const entry of index) {
 			const objectType = entry.system?.objectType ?? '';
 			const props = entry.system?.properties?.selected ?? [];
 			const descPublic = entry.system?.description?.public ?? '';
+
+			const price = entry.system?.price ?? {};
 
 			this.#itemIndex.set(entry.uuid, {
 				uuid: entry.uuid,
@@ -193,6 +195,8 @@ class CompendiumBrowser {
 				weaponAttr: this.#extractWeaponAttr(entry.system?.activation),
 				isRanged: Array.isArray(props) && props.includes('range'),
 				armorType: this.#extractArmorType(descPublic),
+				priceValue: price.value ?? 0,
+				priceDenomination: price.denomination ?? 'gp',
 			});
 		}
 	}

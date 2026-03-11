@@ -7,13 +7,32 @@
 		</div>
 	</div>
 
-	{{!-- Proficiency Filter --}}
+	{{!-- Filter Bar --}}
 	<div class="nimble-selector__filter-bar">
 		<label class="nimble-selector__filter-toggle" data-action="toggleProficiencyFilter">
 			<input type="checkbox" {{#if showOnlyProficient}}checked{{/if}} />
 			{{localize "NIMBLE_SELECTOR.equipment.proficiencyFilter"}}
 		</label>
+		<label class="nimble-selector__filter-toggle" data-action="togglePayTheBill">
+			<input type="checkbox" {{#if payTheBill}}checked{{/if}} />
+			{{localize "NIMBLE_SELECTOR.equipment.payTheBill"}}
+		</label>
 	</div>
+
+	{{!-- Wealth Display --}}
+	{{#if payTheBill}}
+		<div class="nimble-selector__wealth-bar">
+			<div class="nimble-selector__wealth-label">
+				<i class="fa-solid fa-coins"></i>
+				{{localize "NIMBLE_SELECTOR.equipment.wealth"}}:
+			</div>
+			<div class="nimble-selector__wealth-coins">
+				<span class="nimble-selector__coin nimble-selector__coin--gp">{{wealth.gp}} GP</span>
+				<span class="nimble-selector__coin nimble-selector__coin--sp">{{wealth.sp}} SP</span>
+				<span class="nimble-selector__coin nimble-selector__coin--cp">{{wealth.cp}} CP</span>
+			</div>
+		</div>
+	{{/if}}
 
 	{{!-- Category Filter --}}
 	<div class="nimble-selector__category-tabs">
@@ -36,7 +55,7 @@
 		{{#if filteredEquipment.length}}
 			<div class="nimble-selector__card-grid">
 				{{#each filteredEquipment}}
-					<div class="nimble-selector__card {{#if this.selected}}nimble-selector__card--selected{{/if}}"
+					<div class="nimble-selector__card {{#if this.selected}}nimble-selector__card--selected{{/if}} {{#if this.tooExpensive}}nimble-selector__card--too-expensive{{/if}}"
 						 data-action="toggleEquipment" data-uuid="{{this.uuid}}"
 						 data-tooltip="{{this.description}}" data-tooltip-direction="LEFT">
 						<input type="checkbox" class="nimble-selector__card-checkbox"
@@ -46,6 +65,9 @@
 							<div class="nimble-selector__card-name">{{this.name}}</div>
 							<div class="nimble-selector__card-meta">{{this.typeLabel}}</div>
 						</div>
+						{{#if this.priceLabel}}
+							<div class="nimble-selector__card-price">{{this.priceLabel}}</div>
+						{{/if}}
 					</div>
 				{{/each}}
 			</div>
@@ -54,12 +76,33 @@
 		{{/if}}
 	</div>
 
+	{{!-- Selection Total --}}
+	{{#if payTheBill}}
+		{{#if hasSelectionCost}}
+			<div class="nimble-selector__selection-total {{#unless canAfford}}nimble-selector__selection-total--over-budget{{/unless}}">
+				<i class="fa-solid fa-receipt"></i>
+				{{localize "NIMBLE_SELECTOR.equipment.totalCost"}}:
+				<span class="nimble-selector__total-coins">
+					{{#if selectionTotal.gp}}<span class="nimble-selector__coin nimble-selector__coin--gp">{{selectionTotal.gp}} GP</span>{{/if}}
+					{{#if selectionTotal.sp}}<span class="nimble-selector__coin nimble-selector__coin--sp">{{selectionTotal.sp}} SP</span>{{/if}}
+					{{#if selectionTotal.cp}}<span class="nimble-selector__coin nimble-selector__coin--cp">{{selectionTotal.cp}} CP</span>{{/if}}
+				</span>
+				{{#unless canAfford}}
+					<span class="nimble-selector__over-budget-warning">
+						<i class="fa-solid fa-triangle-exclamation"></i>
+						{{localize "NIMBLE_SELECTOR.equipment.cannotAfford"}}
+					</span>
+				{{/unless}}
+			</div>
+		{{/if}}
+	{{/if}}
+
 	<div class="nimble-selector__actions">
 		<button type="button" class="nimble-selector__btn" data-action="cancel">
 			<i class="fa-solid fa-xmark"></i> {{localize "NIMBLE_SELECTOR.actions.cancel"}}
 		</button>
 		<button type="button" class="nimble-selector__btn" data-action="confirm"
-				{{#unless hasSelection}}disabled{{/unless}}>
+				{{#unless canConfirm}}disabled{{/unless}}>
 			<i class="fa-solid fa-check"></i> {{localize "NIMBLE_SELECTOR.equipment.grantSelected"}} ({{selectedCount}})
 		</button>
 	</div>

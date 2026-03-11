@@ -60,7 +60,11 @@
 			"misc": "Misc",
 			"noEquipment": "No equipment matches the current filter.",
 			"grantSelected": "Grant Selected",
-			"proficiencyFilter": "Class proficiencies only"
+			"proficiencyFilter": "Class proficiencies only",
+			"payTheBill": "Pay the Bill!!!",
+			"wealth": "Wealth",
+			"totalCost": "Total",
+			"cannotAfford": "Not enough coin!"
 		},
 		"actions": {
 			"cancel": "Cancel",

@@ -12,6 +12,8 @@ const CATEGORY_CONFIG = {
 	misc: { label: 'Misc', icon: 'fa-solid fa-bag-shopping' },
 };
 
+const DENOMINATION_TO_CP = { gp: 100, sp: 10, cp: 1 };
+
 /**
  * Application for selecting and granting equipment to a character.
  * Filters equipment by category (weapons, armor, shields, etc.)
@@ -25,6 +27,7 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 	#selectedUuids = new Set();
 	#activeCategory = '';
 	#showOnlyProficient = true;
+	#payTheBill = false;
 	#scrollTop = 0;
 	#dataLoaded = false;
 	#proficiencyResolver = new EquipmentProficiencyResolver();
@@ -46,6 +49,7 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 			filterCategory: EquipmentSelector.#onFilterCategory,
 			toggleEquipment: EquipmentSelector.#onToggleEquipment,
 			toggleProficiencyFilter: EquipmentSelector.#onToggleProficiencyFilter,
+			togglePayTheBill: EquipmentSelector.#onTogglePayTheBill,
 			confirm: EquipmentSelector.#onConfirm,
 			cancel: EquipmentSelector.#onCancel,
 		},
@@ -68,6 +72,49 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		this.#proficiencies = this.#proficiencyResolver.resolve(this.#classIdentifier);
 		this.#allEquipment = this.#proficiencyResolver.findAvailableEquipment(this.#classIdentifier);
 		this.#dataLoaded = true;
+	}
+
+	#getActorWealth() {
+		const currency = this.#actor.system?.currency ?? {};
+		return {
+			gp: currency.gp?.value ?? 0,
+			sp: currency.sp?.value ?? 0,
+			cp: currency.cp?.value ?? 0,
+		};
+	}
+
+	#getActorWealthInCp() {
+		const w = this.#getActorWealth();
+		return w.gp * 100 + w.sp * 10 + w.cp;
+	}
+
+	#getItemPriceInCp(item) {
+		const value = item.priceValue ?? 0;
+		const denom = item.priceDenomination ?? 'gp';
+		return value * (DENOMINATION_TO_CP[denom] ?? 100);
+	}
+
+	#formatPrice(item) {
+		const value = item.priceValue ?? 0;
+		const denom = item.priceDenomination ?? 'gp';
+		if (value === 0) return '';
+		return `${value} ${denom.toUpperCase()}`;
+	}
+
+	#getSelectionTotalCp() {
+		let total = 0;
+		for (const uuid of this.#selectedUuids) {
+			const item = this.#allEquipment.find((e) => e.uuid === uuid);
+			if (item) total += this.#getItemPriceInCp(item);
+		}
+		return total;
+	}
+
+	#formatCpToCoins(totalCp) {
+		const gp = Math.floor(totalCp / 100);
+		const sp = Math.floor((totalCp % 100) / 10);
+		const cp = totalCp % 10;
+		return { gp, sp, cp };
 	}
 
 	async _prepareContext() {
@@ -99,11 +146,18 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 			);
 		}
 
-		filteredEquipment = filteredEquipment.map((e) => ({
-			...e,
-			selected: this.#selectedUuids.has(e.uuid),
-			typeLabel: CATEGORY_CONFIG[e.objectType]?.label ?? e.objectType,
-		}));
+		const wealthCp = this.#payTheBill ? this.#getActorWealthInCp() : 0;
+
+		filteredEquipment = filteredEquipment.map((e) => {
+			const priceCp = this.#getItemPriceInCp(e);
+			return {
+				...e,
+				selected: this.#selectedUuids.has(e.uuid),
+				typeLabel: CATEGORY_CONFIG[e.objectType]?.label ?? e.objectType,
+				priceLabel: this.#formatPrice(e),
+				tooExpensive: this.#payTheBill && priceCp > wealthCp,
+			};
+		});
 
 		const armorSummary = this.#proficiencies.armor.length
 			? this.#proficiencies.armor.join(', ')
@@ -113,6 +167,11 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 			: game.i18n.localize('NIMBLE_SELECTOR.panel.none');
 
 		const selectedCount = this.#selectedUuids.size;
+		const wealth = this.#getActorWealth();
+		const selectionTotalCp = this.#getSelectionTotalCp();
+		const selectionTotal = this.#formatCpToCoins(selectionTotalCp);
+		const canAfford = selectionTotalCp <= this.#getActorWealthInCp();
+		const canConfirm = selectedCount > 0 && (!this.#payTheBill || canAfford);
 
 		return {
 			className: capitalize(this.#classIdentifier),
@@ -120,9 +179,15 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 			categories,
 			activeCategory: this.#activeCategory,
 			showOnlyProficient: this.#showOnlyProficient,
+			payTheBill: this.#payTheBill,
 			filteredEquipment,
 			selectedCount,
 			hasSelection: selectedCount > 0,
+			canConfirm,
+			wealth,
+			selectionTotal,
+			hasSelectionCost: selectionTotalCp > 0,
+			canAfford,
 		};
 	}
 
@@ -162,9 +227,42 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		this.render();
 	}
 
+	static #onTogglePayTheBill() {
+		this.#payTheBill = !this.#payTheBill;
+		this.#saveScrollPosition();
+		this.render();
+	}
+
+	async #deductCurrency(totalCp) {
+		const wealth = this.#getActorWealth();
+		let remainingCp = wealth.gp * 100 + wealth.sp * 10 + wealth.cp - totalCp;
+		if (remainingCp < 0) return false;
+
+		const newGp = Math.floor(remainingCp / 100);
+		remainingCp %= 100;
+		const newSp = Math.floor(remainingCp / 10);
+		const newCp = remainingCp % 10;
+
+		await this.#actor.update({
+			'system.currency.gp.value': newGp,
+			'system.currency.sp.value': newSp,
+			'system.currency.cp.value': newCp,
+		});
+		return true;
+	}
+
 	static async #onConfirm() {
 		const uuids = [...this.#selectedUuids].filter(Boolean);
 		if (!uuids.length) return;
+
+		if (this.#payTheBill) {
+			const totalCp = this.#getSelectionTotalCp();
+			if (totalCp > this.#getActorWealthInCp()) {
+				ui.notifications.warn(game.i18n.localize('NIMBLE_SELECTOR.equipment.cannotAfford'));
+				return;
+			}
+			await this.#deductCurrency(totalCp);
+		}
 
 		await this.#granter.grantItemsByUuid(this.#actor, uuids);
 		this.#selectedUuids.clear();

@@ -384,6 +384,102 @@
 	border-bottom-color: var(--nimble-secondary-navigation-active-text-color, hsl(1, 51%, 34%));
 }
 
+/* --- Wealth Bar --- */
+
+.nimble-selector__wealth-bar {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.4rem 0.75rem;
+	background: var(--nimble-box-background-color, hsl(48, 17%, 97%));
+	border-bottom: 1px solid var(--nimble-card-border-color, hsla(41, 18%, 54%, 25%));
+	font-size: var(--nimble-sm-text, 0.833rem);
+	font-weight: 600;
+}
+
+.nimble-selector__wealth-label {
+	display: flex;
+	align-items: center;
+	gap: 0.3rem;
+	color: var(--nimble-medium-text-color, hsl(50, 14%, 35%));
+}
+
+.nimble-selector__wealth-coins {
+	display: flex;
+	gap: 0.5rem;
+}
+
+.nimble-selector__coin {
+	font-weight: 700;
+}
+
+.nimble-selector__coin--gp { color: hsl(43, 74%, 49%); }
+.nimble-selector__coin--sp { color: hsl(0, 0%, 60%); }
+.nimble-selector__coin--cp { color: hsl(25, 57%, 45%); }
+
+/* --- Card Price --- */
+
+.nimble-selector__card-price {
+	font-size: var(--nimble-xs-text, 0.694rem);
+	font-weight: 700;
+	color: hsl(43, 74%, 49%);
+	white-space: nowrap;
+	flex-shrink: 0;
+	padding: 0.15rem 0.4rem;
+	background: hsla(43, 74%, 49%, 0.1);
+	border-radius: 3px;
+}
+
+/* --- Too Expensive Overlay --- */
+
+.nimble-selector__card--too-expensive {
+	position: relative;
+}
+
+.nimble-selector__card--too-expensive::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background: hsla(0, 70%, 40%, 0.15);
+	border-radius: 4px;
+	pointer-events: none;
+}
+
+.nimble-selector__card--too-expensive .nimble-selector__card-price {
+	color: hsl(0, 60%, 45%);
+	background: hsla(0, 60%, 45%, 0.1);
+}
+
+/* --- Selection Total --- */
+
+.nimble-selector__selection-total {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.5rem 0.75rem;
+	background: var(--nimble-box-background-color, hsl(48, 17%, 97%));
+	border-top: 1px solid var(--nimble-card-border-color, hsla(41, 18%, 54%, 25%));
+	font-size: var(--nimble-sm-text, 0.833rem);
+	font-weight: 600;
+}
+
+.nimble-selector__selection-total--over-budget {
+	background: hsla(0, 70%, 40%, 0.08);
+	border-top-color: hsla(0, 60%, 45%, 0.3);
+}
+
+.nimble-selector__total-coins {
+	display: flex;
+	gap: 0.4rem;
+}
+
+.nimble-selector__over-budget-warning {
+	color: hsl(0, 60%, 45%);
+	font-weight: 700;
+	font-size: var(--nimble-xs-text, 0.694rem);
+	margin-left: auto;
+}
+
 /* --- Scrollable Content --- */
 
 .nimble-selector__scroll-area {
