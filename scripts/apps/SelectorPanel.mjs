@@ -15,10 +15,15 @@ const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
  * three sub-selectors: features, spells, and equipment.
  */
 class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
+	/** @type {Actor} */
 	#actor;
+	/** @type {string} */
 	#classIdentifier;
+	/** @type {string|null} */
 	#subclassIdentifier;
+	/** @type {number} */
 	#level;
+	/** @type {number} */
 	#fromLevel;
 
 	#featureResolver = new ClassFeatureResolver();
@@ -27,9 +32,11 @@ class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 	#proficiencyResolver = new EquipmentProficiencyResolver();
 	#compendiumBrowser = CompendiumBrowser.instance;
 
-	// Sub-applications
+	/** @type {ClassFeatureSelector|null} */
 	#featureSelector = null;
+	/** @type {SpellSelector|null} */
 	#spellSelector = null;
+	/** @type {EquipmentSelector|null} */
 	#equipmentSelector = null;
 
 	static DEFAULT_OPTIONS = {
@@ -58,6 +65,14 @@ class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 		},
 	};
 
+	/**
+	 * @param {Actor} actor
+	 * @param {string} classIdentifier
+	 * @param {number} level
+	 * @param {number|null} [fromLevel=null]
+	 * @param {string|null} [subclassIdentifier=null]
+	 * @param {object} [options={}]
+	 */
 	constructor(actor, classIdentifier, level, fromLevel = null, subclassIdentifier = null, options = {}) {
 		super(options);
 		this.#actor = actor;
@@ -67,17 +82,43 @@ class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 		this.#fromLevel = fromLevel ?? level;
 	}
 
+	/** @override */
 	async _prepareContext() {
-		// Features
-		let features = this.#featureResolver.resolveRange(
+		const features = this.#prepareFeatures();
+		const spellData = this.#prepareSpellSummary();
+		const equipmentData = this.#prepareEquipmentSummary();
+		const showFeaturesInPanel = game.settings.get(MODULE_ID, 'showFeaturesInPanel');
+
+		return {
+			actorName: this.#actor.name,
+			className: capitalize(this.#classIdentifier),
+			level: this.#level,
+			features,
+			showFeaturesInPanel,
+			...spellData,
+			...equipmentData,
+		};
+	}
+
+	/**
+	 * Resolve and mark owned features for the panel display.
+	 * @returns {Array<import('../data/ClassFeatureResolver.mjs').ResolvedFeature & {alreadyOwned: boolean}>}
+	 */
+	#prepareFeatures() {
+		const features = this.#featureResolver.resolveRange(
 			this.#classIdentifier,
 			this.#fromLevel,
 			this.#level,
 			this.#subclassIdentifier,
 		);
-		features = this.#featureResolver.markOwnedFeatures(this.#actor, features);
+		return this.#featureResolver.markOwnedFeatures(this.#actor, features);
+	}
 
-		// Spells
+	/**
+	 * Build spell summary data for the panel.
+	 * @returns {object}
+	 */
+	#prepareSpellSummary() {
 		const hasSpellcasting = this.#schoolResolver.hasCasting(this.#classIdentifier, this.#subclassIdentifier);
 		const schoolAccess = this.#schoolResolver.resolve(
 			this.#classIdentifier,
@@ -99,42 +140,37 @@ class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 			icon: SCHOOL_ICONS[s] ?? 'fa-solid fa-sparkles',
 		}));
 
-		const spellCount = hasSpellcasting
+		const spellCount = hasSpellcasting && maxTier >= 0
 			? this.#compendiumBrowser.countSpellsBySchoolAndTier(realSchools, maxTier, hasUtility)
 			: 0;
 
-		// Equipment
+		return { hasSpellcasting, spellSchools, spellCount, maxTier };
+	}
+
+	/**
+	 * Build equipment summary data for the panel.
+	 * @returns {object}
+	 */
+	#prepareEquipmentSummary() {
 		const proficiencies = this.#proficiencyResolver.resolve(this.#classIdentifier);
 		const equipment = this.#proficiencyResolver.findAvailableEquipment(this.#classIdentifier);
 
 		const none = game.i18n.localize('NIMBLE_SELECTOR.panel.none');
-		const armorSummary = proficiencies.armor.length
-			? proficiencies.armor.join(', ')
-			: none;
-		const weaponSummary = proficiencies.weapons.length
-			? proficiencies.weapons.join(', ')
-			: none;
-
-		const showFeaturesInPanel = game.settings.get(MODULE_ID, 'showFeaturesInPanel');
 
 		return {
-			actorName: this.#actor.name,
-			className: capitalize(this.#classIdentifier),
-			level: this.#level,
-			features,
-			showFeaturesInPanel,
-			hasSpellcasting,
-			spellSchools,
-			spellCount,
-			maxTier,
 			equipmentCount: equipment.length,
 			proficiencySummary: {
-				armor: armorSummary,
-				weapons: weaponSummary,
+				armor: proficiencies.armor.length ? proficiencies.armor.join(', ') : none,
+				weapons: proficiencies.weapons.length ? proficiencies.weapons.join(', ') : none,
 			},
 		};
 	}
 
+	/* ---------------------------------------- */
+	/*  Action Handlers                         */
+	/* ---------------------------------------- */
+
+	/** @this {SelectorPanel} */
 	static #onOpenFeatures() {
 		this.#featureSelector?.close();
 		this.#featureSelector = new ClassFeatureSelector(
@@ -147,6 +183,7 @@ class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 		this.#featureSelector.render(true);
 	}
 
+	/** @this {SelectorPanel} */
 	static #onOpenSpells() {
 		this.#spellSelector?.close();
 		this.#spellSelector = new SpellSelector(
@@ -158,6 +195,7 @@ class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 		this.#spellSelector.render(true);
 	}
 
+	/** @this {SelectorPanel} */
 	static #onOpenEquipment() {
 		this.#equipmentSelector?.close();
 		this.#equipmentSelector = new EquipmentSelector(
@@ -167,6 +205,7 @@ class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 		this.#equipmentSelector.render(true);
 	}
 
+	/** @this {SelectorPanel} */
 	static #onClose() {
 		this.#featureSelector?.close();
 		this.#spellSelector?.close();

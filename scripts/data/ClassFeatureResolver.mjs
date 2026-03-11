@@ -1,5 +1,17 @@
 import { CompendiumBrowser } from '../core/CompendiumBrowser.mjs';
-import { buildOwnedItemKeys } from '../utils/constants.mjs';
+import { buildOwnedItemKeys, slugToLabel, normalizeString } from '../utils/constants.mjs';
+
+/**
+ * @typedef {object} ResolvedFeature
+ * @property {string|null} uuid
+ * @property {string} name
+ * @property {string} img
+ * @property {number|null} level
+ * @property {boolean} matched
+ * @property {string|null} selectableGroup - Human-readable group label
+ * @property {string|null} selectableGroupId - Kebab-case group identifier
+ * @property {string} description
+ */
 
 /**
  * Resolves class features for a given class and level range by querying
@@ -18,8 +30,8 @@ class ClassFeatureResolver {
 	 * @param {string} classIdentifier
 	 * @param {number} fromLevel
 	 * @param {number} toLevel
-	 * @param {string|null} subclassIdentifier
-	 * @returns {Array<{uuid: string|null, name: string, img: string, level: number, matched: boolean, selectableGroup: string|null, selectableGroupId: string|null}>}
+	 * @param {string|null} [subclassIdentifier=null]
+	 * @returns {ResolvedFeature[]}
 	 */
 	resolveRange(classIdentifier, fromLevel, toLevel, subclassIdentifier = null) {
 		const { progression, selectableGroups } = this.#compendiumBrowser.getClassFeatures(
@@ -29,6 +41,7 @@ class ClassFeatureResolver {
 			subclassIdentifier,
 		);
 
+		/** @type {ResolvedFeature[]} */
 		const results = [];
 
 		// Add progression / subclass features (already expanded per level)
@@ -47,8 +60,7 @@ class ClassFeatureResolver {
 
 		// Add selectable group features (once per feature, not duplicated per level)
 		for (const [groupId, features] of selectableGroups) {
-			const groupLabel = ClassFeatureResolver.#slugToLabel(groupId);
-
+			const groupLabel = slugToLabel(groupId);
 			for (const f of features) {
 				results.push({
 					uuid: f.uuid,
@@ -67,10 +79,10 @@ class ClassFeatureResolver {
 	}
 
 	/**
-	 * Filter out features the actor already owns.
+	 * Annotate features with ownership status.
 	 * @param {Actor} actor
-	 * @param {Array<{uuid: string|null, name: string}>} features
-	 * @returns {Array<{uuid: string|null, name: string, alreadyOwned: boolean}>}
+	 * @param {ResolvedFeature[]} features
+	 * @returns {Array<ResolvedFeature & {alreadyOwned: boolean}>}
 	 */
 	markOwnedFeatures(actor, features) {
 		const ownedKeys = buildOwnedItemKeys(actor, 'feature');
@@ -78,21 +90,9 @@ class ClassFeatureResolver {
 		return features.map((f) => ({
 			...f,
 			alreadyOwned:
-				ownedKeys.has(f.name.toLowerCase().trim()) ||
-				(f.uuid && ownedKeys.has(f.uuid)),
+				ownedKeys.has(normalizeString(f.name)) ||
+				(f.uuid != null && ownedKeys.has(f.uuid)),
 		}));
-	}
-
-	/**
-	 * Convert a kebab-case group slug to a human-readable label.
-	 * @param {string} slug - e.g. "savage-arsenal"
-	 * @returns {string} e.g. "Savage Arsenal"
-	 */
-	static #slugToLabel(slug) {
-		return slug
-			.split('-')
-			.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-			.join(' ');
 	}
 }
 

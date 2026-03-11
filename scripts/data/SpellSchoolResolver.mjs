@@ -15,8 +15,8 @@ class SpellSchoolResolver {
 	 * Resolve the spell schools accessible at a given level.
 	 * @param {string} classIdentifier
 	 * @param {number} level
-	 * @param {string|null} subclassIdentifier
-	 * @returns {{ granted: string[], choices: Array<{ schools: string[] }> }}
+	 * @param {string|null} [subclassIdentifier=null]
+	 * @returns {import('./DataProvider.mjs').SpellSchoolAccess}
 	 */
 	resolve(classIdentifier, level, subclassIdentifier = null) {
 		return this.#dataProvider.getSpellSchools(classIdentifier, level, subclassIdentifier);
@@ -24,8 +24,9 @@ class SpellSchoolResolver {
 
 	/**
 	 * Check if a class (with optional subclass) has any spellcasting ability.
+	 * Tests against level 20 to capture all possible unlocks.
 	 * @param {string} classIdentifier
-	 * @param {string|null} subclassIdentifier
+	 * @param {string|null} [subclassIdentifier=null]
 	 * @returns {boolean}
 	 */
 	hasCasting(classIdentifier, subclassIdentifier = null) {

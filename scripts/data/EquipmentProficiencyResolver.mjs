@@ -2,12 +2,19 @@ import { DataProvider } from './DataProvider.mjs';
 import { CompendiumBrowser } from '../core/CompendiumBrowser.mjs';
 
 /**
+ * @typedef {object} Proficiencies
+ * @property {string[]} armor
+ * @property {string[]} weapons
+ */
+
+/**
  * Resolves available equipment for a character based on their
  * class proficiencies.
  */
 class EquipmentProficiencyResolver {
 	#dataProvider;
 	#compendiumBrowser;
+	/** @type {Map<string, Set<string>>|null} Lazily built weapon category index. */
 	#weaponCategoryIndex = null;
 
 	constructor() {
@@ -18,7 +25,7 @@ class EquipmentProficiencyResolver {
 	/**
 	 * Get the proficiency data for a class.
 	 * @param {string} classIdentifier
-	 * @returns {{ armor: string[], weapons: string[] }}
+	 * @returns {Proficiencies}
 	 */
 	resolve(classIdentifier) {
 		return this.#dataProvider.getEquipmentProficiencies(classIdentifier);
@@ -26,12 +33,13 @@ class EquipmentProficiencyResolver {
 
 	/**
 	 * Find all equipment items from the compendium that match the class proficiencies.
+	 * Always includes consumables and misc items regardless of class.
 	 * @param {string} classIdentifier
-	 * @returns {Array<{uuid: string, name: string, img: string, objectType: string}>}
+	 * @returns {import('../core/CompendiumBrowser.mjs').ItemData[]}
 	 */
 	findAvailableEquipment(classIdentifier) {
 		const proficiencies = this.resolve(classIdentifier);
-		const objectTypes = new Set();
+		const objectTypes = new Set(['consumable', 'misc']);
 
 		if (proficiencies.armor.length > 0) objectTypes.add('armor');
 		if (proficiencies.armor.includes('shields') || proficiencies.armor.includes('all')) {
@@ -39,41 +47,45 @@ class EquipmentProficiencyResolver {
 		}
 		if (proficiencies.weapons.length > 0) objectTypes.add('weapon');
 
-		// Consumables and misc items are available to all classes
-		objectTypes.add('consumable');
-		objectTypes.add('misc');
-
 		return this.#compendiumBrowser.findEquipmentByType([...objectTypes]);
 	}
 
 	/**
 	 * Check if an item matches the class proficiencies.
 	 * Consumables and misc are always allowed.
-	 * @param {object} item - Indexed item from CompendiumBrowser
-	 * @param {{ armor: string[], weapons: string[] }} proficiencies
+	 * @param {import('../core/CompendiumBrowser.mjs').ItemData} item
+	 * @param {Proficiencies} proficiencies
 	 * @returns {boolean}
 	 */
 	matchesProficiency(item, proficiencies) {
-		const type = item.objectType;
+		const { objectType } = item;
 
-		if (type === 'consumable' || type === 'misc') return true;
+		if (objectType === 'consumable' || objectType === 'misc') return true;
 
-		if (type === 'shield') {
+		if (objectType === 'shield') {
 			return proficiencies.armor.includes('shields') || proficiencies.armor.includes('all');
 		}
 
-		if (type === 'armor') {
-			if (proficiencies.armor.includes('all')) return true;
-			return item.armorType != null && proficiencies.armor.includes(item.armorType);
+		if (objectType === 'armor') {
+			return proficiencies.armor.includes('all')
+				|| (item.armorType != null && proficiencies.armor.includes(item.armorType));
 		}
 
-		if (type === 'weapon') {
+		if (objectType === 'weapon') {
 			return this.#matchesWeaponProficiency(item, proficiencies.weapons);
 		}
 
 		return true;
 	}
 
+	/**
+	 * Check if a weapon matches any of the given proficiency tags.
+	 * Tags can be broad categories ("all-martial", "all-str") or
+	 * specific named weapon groups from the category index.
+	 * @param {import('../core/CompendiumBrowser.mjs').ItemData} item
+	 * @param {string[]} weaponTags
+	 * @returns {boolean}
+	 */
 	#matchesWeaponProficiency(item, weaponTags) {
 		for (const tag of weaponTags) {
 			switch (tag) {
@@ -99,6 +111,10 @@ class EquipmentProficiencyResolver {
 		return false;
 	}
 
+	/**
+	 * Lazily build and cache the weapon category index.
+	 * @returns {Map<string, Set<string>>}
+	 */
 	#getWeaponCategoryIndex() {
 		if (!this.#weaponCategoryIndex) {
 			this.#weaponCategoryIndex = new Map();

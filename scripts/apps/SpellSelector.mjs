@@ -11,18 +11,31 @@ const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
  * Filters spells by school and tier based on class/subclass access.
  */
 class SpellSelector extends HandlebarsApplicationMixin(ApplicationV2) {
+	/** @type {Actor} */
 	#actor;
+	/** @type {string} */
 	#classIdentifier;
+	/** @type {string|null} */
 	#subclassIdentifier;
+	/** @type {number} */
 	#level;
+	/** @type {import('../core/CompendiumBrowser.mjs').SpellData[]} */
 	#allSpells = [];
+	/** @type {Map<string, import('../core/CompendiumBrowser.mjs').SpellData>} UUID-keyed lookup. */
+	#spellsByUuid = new Map();
+	/** @type {Set<string>} */
 	#selectedUuids = new Set();
+	/** @type {Set<string>} */
 	#ownedSpellKeys = new Set();
+	/** @type {string} Active school filter (empty = show all). */
 	#activeSchool = '';
+	/** @type {number|null} Active tier filter (null = show all). */
 	#activeTier = null;
 	#scrollTop = 0;
 	#dataLoaded = false;
+	/** @type {string[]} */
 	#grantedSchools = [];
+	/** @type {number} */
 	#maxTier = 0;
 	#schoolResolver = new SpellSchoolResolver();
 	#tierResolver = new SpellTierResolver();
@@ -56,6 +69,13 @@ class SpellSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		},
 	};
 
+	/**
+	 * @param {Actor} actor
+	 * @param {string} classIdentifier
+	 * @param {number} level
+	 * @param {string|null} [subclassIdentifier=null]
+	 * @param {object} [options={}]
+	 */
 	constructor(actor, classIdentifier, level, subclassIdentifier = null, options = {}) {
 		super(options);
 		this.#actor = actor;
@@ -64,6 +84,9 @@ class SpellSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		this.#level = level;
 	}
 
+	/**
+	 * Load spell data once (schools, tiers, spell list, owned keys).
+	 */
 	#loadSpellData() {
 		if (this.#dataLoaded) return;
 
@@ -79,18 +102,28 @@ class SpellSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		);
 
 		this.#grantedSchools = schoolAccess.granted;
+
+		// No spellcasting at this level — skip compendium query
+		if (this.#maxTier < 0 || this.#grantedSchools.length === 0) {
+			this.#allSpells = [];
+			this.#spellsByUuid = new Map();
+			this.#dataLoaded = true;
+			return;
+		}
+
 		const hasUtility = this.#grantedSchools.includes('utility');
 		const realSchools = this.#grantedSchools.filter((s) => s !== 'utility');
 
 		this.#allSpells = this.#compendiumBrowser.findSpellsBySchoolAndTier(realSchools, this.#maxTier, hasUtility);
+		this.#spellsByUuid = new Map(this.#allSpells.map((s) => [s.uuid, s]));
 		this.#ownedSpellKeys = buildOwnedItemKeys(this.#actor, 'spell');
 		this.#dataLoaded = true;
 	}
 
+	/** @override */
 	async _prepareContext() {
 		this.#loadSpellData();
 
-		// Build school filter data
 		const schools = this.#grantedSchools.map((s) => ({
 			id: s,
 			label: capitalize(s),
@@ -98,47 +131,8 @@ class SpellSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 			active: this.#activeSchool === s,
 		}));
 
-		// Build tier filter data (start at 0 for cantrips)
-		const availableTiers = [];
-		for (let t = 0; t <= this.#maxTier; t++) {
-			availableTiers.push({
-				tier: t,
-				label: t === 0 ? game.i18n.localize('NIMBLE_SELECTOR.spells.cantrip') : `${game.i18n.localize('NIMBLE_SELECTOR.spells.tier')} ${t}`,
-				active: this.#activeTier === t,
-			});
-		}
-
-		// Apply filters
-		let filteredSpells = this.#allSpells;
-		if (this.#activeSchool) {
-			if (this.#activeSchool === 'utility') {
-				filteredSpells = filteredSpells.filter((s) => s.isUtility);
-			} else {
-				filteredSpells = filteredSpells.filter(
-					(s) => s._normalizedSchool === this.#activeSchool,
-				);
-			}
-		}
-		if (this.#activeTier !== null && this.#activeTier !== undefined) {
-			filteredSpells = filteredSpells.filter((s) => s.tier === this.#activeTier);
-		}
-
-		// Enrich spell data for display
-		filteredSpells = filteredSpells.map((s) => {
-			const alreadyOwned =
-				this.#ownedSpellKeys.has(s._normalizedName) ||
-				(s.uuid && this.#ownedSpellKeys.has(s.uuid));
-			return {
-				...s,
-				alreadyOwned,
-				selected: !alreadyOwned && this.#selectedUuids.has(s.uuid),
-				schoolIcon: SCHOOL_ICONS[s._normalizedSchool] ?? '',
-				schoolLabel: capitalize(s.school),
-				tierLabel: s.isUtility ? game.i18n.localize('NIMBLE_SELECTOR.spells.utility') : (s.tier === 0 ? game.i18n.localize('NIMBLE_SELECTOR.spells.cantrip') : `${game.i18n.localize('NIMBLE_SELECTOR.spells.tier')} ${s.tier}`),
-				tierClass: s.isUtility ? 'utility' : (s.tier === 0 ? 'cantrip' : String(s.tier)),
-			};
-		});
-
+		const availableTiers = this.#buildTierFilters();
+		const filteredSpells = this.#getFilteredSpells().map((s) => this.#enrichSpellForDisplay(s));
 		const selectedCount = this.#selectedUuids.size;
 
 		return {
@@ -154,24 +148,103 @@ class SpellSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		};
 	}
 
-	_onRender(context, options) {
-		const scrollArea = this.element.querySelector('.nimble-selector__scroll-area');
+	/**
+	 * Build tier filter buttons from 0 (cantrips) to maxTier.
+	 * @returns {Array<{tier: number, label: string, active: boolean}>}
+	 */
+	#buildTierFilters() {
+		const tiers = [];
+		for (let t = 0; t <= this.#maxTier; t++) {
+			tiers.push({
+				tier: t,
+				label: SpellSelector.#getTierLabel(t),
+				active: this.#activeTier === t,
+			});
+		}
+		return tiers;
+	}
+
+	/**
+	 * Apply active school and tier filters to the spell list.
+	 * @returns {import('../core/CompendiumBrowser.mjs').SpellData[]}
+	 */
+	#getFilteredSpells() {
+		let spells = this.#allSpells;
+
+		if (this.#activeSchool) {
+			spells = this.#activeSchool === 'utility'
+				? spells.filter((s) => s.isUtility)
+				: spells.filter((s) => s._normalizedSchool === this.#activeSchool);
+		}
+
+		if (this.#activeTier != null) {
+			spells = spells.filter((s) => s.tier === this.#activeTier);
+		}
+
+		return spells;
+	}
+
+	/**
+	 * Enrich a spell with display-specific properties (ownership, labels, selection state).
+	 * @param {import('../core/CompendiumBrowser.mjs').SpellData} spell
+	 * @returns {object}
+	 */
+	#enrichSpellForDisplay(spell) {
+		const alreadyOwned =
+			this.#ownedSpellKeys.has(spell._normalizedName) ||
+			(spell.uuid && this.#ownedSpellKeys.has(spell.uuid));
+
+		return {
+			...spell,
+			alreadyOwned,
+			selected: !alreadyOwned && this.#selectedUuids.has(spell.uuid),
+			schoolIcon: SCHOOL_ICONS[spell._normalizedSchool] ?? '',
+			schoolLabel: capitalize(spell.school),
+			tierLabel: spell.isUtility
+				? game.i18n.localize('NIMBLE_SELECTOR.spells.utility')
+				: SpellSelector.#getTierLabel(spell.tier),
+			tierClass: spell.isUtility ? 'utility' : (spell.tier === 0 ? 'cantrip' : String(spell.tier)),
+		};
+	}
+
+	/**
+	 * Get a human-readable label for a spell tier.
+	 * @param {number} tier
+	 * @returns {string}
+	 */
+	static #getTierLabel(tier) {
+		if (tier === 0) return game.i18n.localize('NIMBLE_SELECTOR.spells.cantrip');
+		return `${game.i18n.localize('NIMBLE_SELECTOR.spells.tier')} ${tier}`;
+	}
+
+	/** @override */
+	_onRender(_context, _options) {
+		const scrollArea = this.element?.querySelector('.nimble-selector__scroll-area');
 		if (scrollArea) scrollArea.scrollTop = this.#scrollTop;
 	}
 
+	/**
+	 * Save current scroll position before re-render.
+	 */
 	#saveScrollPosition() {
 		const scrollArea = this.element?.querySelector('.nimble-selector__scroll-area');
 		if (scrollArea) this.#scrollTop = scrollArea.scrollTop;
 	}
 
-	static #onFilterSchool(event, target) {
+	/* ---------------------------------------- */
+	/*  Action Handlers                         */
+	/* ---------------------------------------- */
+
+	/** @this {SpellSelector} */
+	static #onFilterSchool(_event, target) {
 		const school = target.dataset.school;
 		this.#activeSchool = this.#activeSchool === school ? '' : school;
 		this.#saveScrollPosition();
 		this.render();
 	}
 
-	static #onFilterTier(event, target) {
+	/** @this {SpellSelector} */
+	static #onFilterTier(_event, target) {
 		const tier = target.dataset.tier;
 		if (tier === '') {
 			this.#activeTier = null;
@@ -183,13 +256,14 @@ class SpellSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		this.render();
 	}
 
-	static #onToggleSpell(event, target) {
+	/** @this {SpellSelector} */
+	static #onToggleSpell(_event, target) {
 		const uuid = target.dataset.uuid;
 		if (!uuid) return;
 
-		// Prevent toggling already-owned spells (uses cached data from _prepareContext)
+		// Prevent toggling already-owned spells
 		if (this.#ownedSpellKeys.has(uuid)) return;
-		const spell = this.#allSpells.find((s) => s.uuid === uuid);
+		const spell = this.#spellsByUuid.get(uuid);
 		if (spell && this.#ownedSpellKeys.has(spell._normalizedName)) return;
 
 		if (this.#selectedUuids.has(uuid)) {
@@ -201,16 +275,23 @@ class SpellSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		this.render();
 	}
 
+	/** @this {SpellSelector} */
 	static async #onConfirm() {
 		const uuids = [...this.#selectedUuids].filter(Boolean);
 		if (!uuids.length) return;
 
 		await this.#granter.grantItemsByUuid(this.#actor, uuids);
 		this.#selectedUuids.clear();
-		ui.notifications.info(game.i18n.format('NIMBLE_SELECTOR.notifications.grantedSpells', { count: uuids.length, name: this.#actor.name }));
+		ui.notifications.info(
+			game.i18n.format('NIMBLE_SELECTOR.notifications.grantedSpells', {
+				count: uuids.length,
+				name: this.#actor.name,
+			}),
+		);
 		this.close();
 	}
 
+	/** @this {SpellSelector} */
 	static #onCancel() {
 		this.close();
 	}

@@ -15,13 +15,12 @@ class SpellTierResolver {
 	 * Resolve the max spell tier for a class at a given level.
 	 * @param {string} classIdentifier
 	 * @param {number} level
-	 * @param {string|null} subclassIdentifier
+	 * @param {string|null} [subclassIdentifier=null]
 	 * @returns {number} Max tier (0 = cantrips only, -1 = no spellcasting)
 	 */
 	resolve(classIdentifier, level, subclassIdentifier = null) {
 		return this.#dataProvider.getMaxSpellTier(classIdentifier, level, subclassIdentifier);
 	}
-
 }
 
 export { SpellTierResolver };

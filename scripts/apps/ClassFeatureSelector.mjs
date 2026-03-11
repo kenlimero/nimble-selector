@@ -1,4 +1,4 @@
-import { MODULE_ID, TEMPLATE_PATH, capitalize } from '../utils/constants.mjs';
+import { MODULE_ID, TEMPLATE_PATH, capitalize, pushToMapArray } from '../utils/constants.mjs';
 import { ClassFeatureResolver } from '../data/ClassFeatureResolver.mjs';
 import { ItemGranter } from '../core/ItemGranter.mjs';
 
@@ -10,15 +10,23 @@ const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
  * group sections listed once (not duplicated per level).
  */
 class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
+	/** @type {Actor} */
 	#actor;
+	/** @type {string} */
 	#classIdentifier;
+	/** @type {string|null} */
 	#subclassIdentifier;
+	/** @type {number} */
 	#fromLevel;
+	/** @type {number} */
 	#toLevel;
+	/** @type {import('../data/ClassFeatureResolver.mjs').ResolvedFeature[]} */
 	#features = [];
+	/** @type {Set<string>} */
 	#selectedUuids = new Set();
 	#initialSelectionDone = false;
 	#scrollTop = 0;
+	/** @type {string} Active selectable group filter (empty = show all). */
 	#activeGroup = '';
 	#resolver = new ClassFeatureResolver();
 	#granter = new ItemGranter();
@@ -51,6 +59,14 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		},
 	};
 
+	/**
+	 * @param {Actor} actor
+	 * @param {string} classIdentifier
+	 * @param {number} fromLevel
+	 * @param {number} toLevel
+	 * @param {string|null} [subclassIdentifier=null]
+	 * @param {object} [options={}]
+	 */
 	constructor(actor, classIdentifier, fromLevel, toLevel, subclassIdentifier = null, options = {}) {
 		super(options);
 		this.#actor = actor;
@@ -60,6 +76,7 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		this.#toLevel = toLevel;
 	}
 
+	/** @override */
 	async _prepareContext() {
 		this.#features = this.#resolver.resolveRange(
 			this.#classIdentifier,
@@ -67,67 +84,12 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 			this.#toLevel,
 			this.#subclassIdentifier,
 		);
-
 		this.#features = this.#resolver.markOwnedFeatures(this.#actor, this.#features);
 
-		// Auto-select only progression features, not selectable options (only on first render)
-		if (!this.#initialSelectionDone) {
-			for (const f of this.#features) {
-				if (!f.alreadyOwned && f.matched && !f.selectableGroup) {
-					this.#selectedUuids.add(f.uuid);
-				}
-			}
-			this.#initialSelectionDone = true;
-		}
+		this.#autoSelectOnFirstRender();
 
-		// Build selectable group sections (always needed for filter buttons)
-		const groupMap = new Map();
-		for (const f of this.#features) {
-			if (!f.selectableGroupId) continue;
-			if (!groupMap.has(f.selectableGroupId)) {
-				groupMap.set(f.selectableGroupId, {
-					id: f.selectableGroupId,
-					label: f.selectableGroup,
-					active: this.#activeGroup === f.selectableGroupId,
-					features: [],
-				});
-			}
-			groupMap.get(f.selectableGroupId).features.push({
-				...f,
-				selected: this.#selectedUuids.has(f.uuid),
-			});
-		}
-
-		const selectableGroupSections = [...groupMap.values()];
-
-		// When a group filter is active, show only that group
-		let levelGroups = [];
-		let filteredGroupSections = selectableGroupSections;
-
-		if (this.#activeGroup) {
-			// Filter mode: show only the selected group
-			filteredGroupSections = selectableGroupSections.filter(
-				(g) => g.id === this.#activeGroup,
-			);
-		} else {
-			// Default mode: progression features by level + all selectable sections
-			const levelMap = new Map();
-			for (const f of this.#features) {
-				if (f.selectableGroupId) continue;
-				if (!levelMap.has(f.level)) {
-					levelMap.set(f.level, []);
-				}
-				levelMap.get(f.level).push({
-					...f,
-					selected: this.#selectedUuids.has(f.uuid),
-				});
-			}
-
-			levelGroups = [...levelMap.entries()]
-				.sort(([a], [b]) => a - b)
-				.map(([level, features]) => ({ level, features }));
-		}
-
+		const selectableGroupSections = this.#buildSelectableGroupSections();
+		const { levelGroups, filteredGroupSections } = this.#buildDisplayGroups(selectableGroupSections);
 		const selectedCount = this.#selectedUuids.size;
 
 		return {
@@ -146,24 +108,102 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		};
 	}
 
-	_onRender(context, options) {
-		const scrollArea = this.element.querySelector('.nimble-selector__scroll-area');
+	/**
+	 * Auto-select progression features on first render (if setting enabled).
+	 */
+	#autoSelectOnFirstRender() {
+		if (this.#initialSelectionDone) return;
+		this.#initialSelectionDone = true;
+		if (!game.settings.get(MODULE_ID, 'autoSelectFeatures')) return;
+		for (const f of this.#features) {
+			if (!f.alreadyOwned && f.matched && !f.selectableGroup && f.uuid) {
+				this.#selectedUuids.add(f.uuid);
+			}
+		}
+	}
+
+	/**
+	 * Build selectable group sections from features (always needed for filter buttons).
+	 * @returns {Array<{id: string, label: string, active: boolean, features: object[]}>}
+	 */
+	#buildSelectableGroupSections() {
+		const groupMap = new Map();
+		for (const f of this.#features) {
+			if (!f.selectableGroupId) continue;
+			if (!groupMap.has(f.selectableGroupId)) {
+				groupMap.set(f.selectableGroupId, {
+					id: f.selectableGroupId,
+					label: f.selectableGroup,
+					active: this.#activeGroup === f.selectableGroupId,
+					features: [],
+				});
+			}
+			groupMap.get(f.selectableGroupId).features.push({
+				...f,
+				selected: this.#selectedUuids.has(f.uuid),
+			});
+		}
+		return [...groupMap.values()];
+	}
+
+	/**
+	 * Build the level groups and filtered group sections based on active filter.
+	 * @param {Array} selectableGroupSections
+	 * @returns {{levelGroups: Array, filteredGroupSections: Array}}
+	 */
+	#buildDisplayGroups(selectableGroupSections) {
+		if (this.#activeGroup) {
+			return {
+				levelGroups: [],
+				filteredGroupSections: selectableGroupSections.filter((g) => g.id === this.#activeGroup),
+			};
+		}
+
+		// Default mode: progression features by level + all selectable sections
+		const levelMap = new Map();
+		for (const f of this.#features) {
+			if (f.selectableGroupId) continue;
+			pushToMapArray(levelMap, f.level, {
+				...f,
+				selected: this.#selectedUuids.has(f.uuid),
+			});
+		}
+
+		const levelGroups = [...levelMap.entries()]
+			.sort(([a], [b]) => a - b)
+			.map(([level, features]) => ({ level, features }));
+
+		return { levelGroups, filteredGroupSections: selectableGroupSections };
+	}
+
+	/** @override */
+	_onRender(_context, _options) {
+		const scrollArea = this.element?.querySelector('.nimble-selector__scroll-area');
 		if (scrollArea) scrollArea.scrollTop = this.#scrollTop;
 	}
 
+	/**
+	 * Save current scroll position before re-render.
+	 */
 	#saveScrollPosition() {
 		const scrollArea = this.element?.querySelector('.nimble-selector__scroll-area');
 		if (scrollArea) this.#scrollTop = scrollArea.scrollTop;
 	}
 
-	static #onFilterGroup(event, target) {
+	/* ---------------------------------------- */
+	/*  Action Handlers                         */
+	/* ---------------------------------------- */
+
+	/** @this {ClassFeatureSelector} */
+	static #onFilterGroup(_event, target) {
 		const group = target.dataset.group;
 		this.#activeGroup = this.#activeGroup === group ? '' : group;
 		this.#saveScrollPosition();
 		this.render();
 	}
 
-	static #onToggleFeature(event, target) {
+	/** @this {ClassFeatureSelector} */
+	static #onToggleFeature(_event, target) {
 		const uuid = target.dataset.uuid;
 		if (!uuid) return;
 
@@ -179,31 +219,40 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		this.render();
 	}
 
+	/** @this {ClassFeatureSelector} */
 	static #onSelectAll() {
 		for (const f of this.#features) {
-			if (f.alreadyOwned || !f.matched) continue;
+			if (f.alreadyOwned || !f.matched || !f.uuid) continue;
 			this.#selectedUuids.add(f.uuid);
 		}
 		this.#saveScrollPosition();
 		this.render();
 	}
 
+	/** @this {ClassFeatureSelector} */
 	static #onDeselectAll() {
 		this.#selectedUuids.clear();
 		this.#saveScrollPosition();
 		this.render();
 	}
 
+	/** @this {ClassFeatureSelector} */
 	static async #onConfirm() {
 		const uuids = [...this.#selectedUuids].filter(Boolean);
 		if (!uuids.length) return;
 
 		await this.#granter.grantItemsByUuid(this.#actor, uuids);
 		this.#selectedUuids.clear();
-		ui.notifications.info(game.i18n.format('NIMBLE_SELECTOR.notifications.grantedFeatures', { count: uuids.length, name: this.#actor.name }));
+		ui.notifications.info(
+			game.i18n.format('NIMBLE_SELECTOR.notifications.grantedFeatures', {
+				count: uuids.length,
+				name: this.#actor.name,
+			}),
+		);
 		this.close();
 	}
 
+	/** @this {ClassFeatureSelector} */
 	static #onCancel() {
 		this.close();
 	}

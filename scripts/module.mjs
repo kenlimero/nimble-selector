@@ -1,4 +1,4 @@
-import { MODULE_ID } from './utils/constants.mjs';
+import { MODULE_ID, LOG_PREFIX } from './utils/constants.mjs';
 import { DataProvider } from './data/DataProvider.mjs';
 import { CompendiumBrowser } from './core/CompendiumBrowser.mjs';
 import { SelectorOrchestrator } from './core/SelectorOrchestrator.mjs';
@@ -19,7 +19,11 @@ import { SelectorOrchestrator } from './core/SelectorOrchestrator.mjs';
  * our button as a native window header control.
  */
 
+/** @type {SelectorOrchestrator|null} */
 let orchestrator = null;
+
+/** Delay (ms) before opening panel after class creation, to let the system finish. */
+const CLASS_CREATION_DELAY = 500;
 
 /* ---------------------------------------- */
 /*  Helpers                                 */
@@ -29,6 +33,8 @@ let orchestrator = null;
  * Extract a document ID from a context-menu <li> element.
  * FoundryVTT v13 ApplicationV2 sidebars may use data-entry-id
  * instead of the legacy data-document-id.
+ * @param {HTMLElement|jQuery} li
+ * @returns {string|undefined}
  */
 function _getDocumentId(li) {
 	if (li instanceof HTMLElement) {
@@ -84,9 +90,9 @@ function _findCharacterSheetClasses() {
 				if (cls) classes.add(cls);
 			}
 		}
-	} catch { /* not available */ }
+	} catch { /* not available in all versions */ }
 
-	console.log(`${MODULE_ID} | Found ${classes.size} character sheet class(es):`,
+	console.log(`${LOG_PREFIX} Found ${classes.size} character sheet class(es):`,
 		[...classes].map((c) => c.name || '(anonymous)'),
 	);
 	return [...classes];
@@ -106,49 +112,63 @@ function _patchCharacterSheetControls() {
 	for (const SheetClass of sheetClasses) {
 		if (!SheetClass?.prototype) continue;
 
-		// Find the class in the chain that owns _getHeaderControls
-		let owner = SheetClass.prototype;
-		while (owner && !Object.hasOwn(owner, '_getHeaderControls')) {
-			owner = Object.getPrototypeOf(owner);
-		}
-		if (!owner || patched.has(owner)) continue;
-		patched.add(owner);
-
-		const original = owner._getHeaderControls;
-		owner._getHeaderControls = function () {
-			const controls = original.call(this);
-			if (!controls.some((c) => c.action === 'nimbleSelector')) {
-				controls.push({
-					icon: 'fa-solid fa-arrow-up-right-dots',
-					label: 'Nimble Selector',
-					action: 'nimbleSelector',
-					ownership: 'OWNER',
-				});
-			}
-			return controls;
-		};
-
-		// Register the action handler on the first class that owns DEFAULT_OPTIONS.actions
-		let target = SheetClass;
-		while (target) {
-			if (Object.hasOwn(target, 'DEFAULT_OPTIONS') && target.DEFAULT_OPTIONS.actions) {
-				if (!target.DEFAULT_OPTIONS.actions.nimbleSelector) {
-					target.DEFAULT_OPTIONS.actions.nimbleSelector = function () {
-						if (!orchestrator) {
-							ui.notifications.warn(game.i18n.localize('NIMBLE_SELECTOR.notifications.loading'));
-							return;
-						}
-						orchestrator.openForActor(this.document);
-					};
-				}
-				break;
-			}
-			target = Object.getPrototypeOf(target);
-			if (target === Function.prototype || target === null) break;
-		}
+		_patchHeaderControls(SheetClass, patched);
+		_registerActionHandler(SheetClass);
 	}
 
-	console.log(`${MODULE_ID} | Patched ${patched.size} prototype(s) with header control`);
+	console.log(`${LOG_PREFIX} Patched ${patched.size} prototype(s) with header control`);
+}
+
+/**
+ * Wrap _getHeaderControls on the prototype that owns it to inject our button.
+ * @param {Function} SheetClass
+ * @param {Set} patched - Tracks already-patched prototypes to avoid duplicates
+ */
+function _patchHeaderControls(SheetClass, patched) {
+	let owner = SheetClass.prototype;
+	while (owner && !Object.hasOwn(owner, '_getHeaderControls')) {
+		owner = Object.getPrototypeOf(owner);
+	}
+	if (!owner || patched.has(owner)) return;
+	patched.add(owner);
+
+	const original = owner._getHeaderControls;
+	owner._getHeaderControls = function () {
+		const controls = original.call(this);
+		if (!controls.some((c) => c.action === 'nimbleSelector')) {
+			controls.push({
+				icon: 'fa-solid fa-arrow-up-right-dots',
+				label: 'Nimble Selector',
+				action: 'nimbleSelector',
+				ownership: 'OWNER',
+			});
+		}
+		return controls;
+	};
+}
+
+/**
+ * Register the nimbleSelector action handler on the class that owns DEFAULT_OPTIONS.actions.
+ * @param {Function} SheetClass
+ */
+function _registerActionHandler(SheetClass) {
+	let target = SheetClass;
+	while (target) {
+		if (Object.hasOwn(target, 'DEFAULT_OPTIONS') && target.DEFAULT_OPTIONS.actions) {
+			if (!target.DEFAULT_OPTIONS.actions.nimbleSelector) {
+				target.DEFAULT_OPTIONS.actions.nimbleSelector = function () {
+					if (!orchestrator) {
+						ui.notifications.warn(game.i18n.localize('NIMBLE_SELECTOR.notifications.loading'));
+						return;
+					}
+					orchestrator.openForActor(this.document);
+				};
+			}
+			return;
+		}
+		target = Object.getPrototypeOf(target);
+		if (target === Function.prototype || target === null) return;
+	}
 }
 
 /* ---------------------------------------- */
@@ -156,7 +176,7 @@ function _patchCharacterSheetControls() {
 /* ---------------------------------------- */
 
 Hooks.once('init', () => {
-	console.log(`${MODULE_ID} | Initializing Nimble Selector module`);
+	console.log(`${LOG_PREFIX} Initializing Nimble Selector module`);
 
 	// ── Settings ──────────────────────────────
 	game.settings.register(MODULE_ID, 'autoOpenOnLevelUp', {
@@ -203,13 +223,13 @@ Hooks.once('init', () => {
 /* ---------------------------------------- */
 
 Hooks.once('ready', async () => {
-	console.log(`${MODULE_ID} | Loading data and indexing compendiums`);
+	console.log(`${LOG_PREFIX} Loading data and indexing compendiums`);
 
 	try {
-		const dataProvider = DataProvider.instance;
-		const compendiumBrowser = CompendiumBrowser.instance;
-
-		await Promise.all([dataProvider.load(), compendiumBrowser.initialize()]);
+		await Promise.all([
+			DataProvider.instance.load(),
+			CompendiumBrowser.instance.initialize(),
+		]);
 
 		orchestrator = new SelectorOrchestrator();
 
@@ -222,12 +242,11 @@ Hooks.once('ready', async () => {
 			openEquipmentSelector: (actor) => orchestrator.openEquipmentSelector(actor),
 		};
 
-		// Patch character sheet classes to add header control button
 		_patchCharacterSheetControls();
 
-		console.log(`${MODULE_ID} | Ready`);
+		console.log(`${LOG_PREFIX} Ready`);
 	} catch (err) {
-		console.error(`${MODULE_ID} | Failed to initialize:`, err);
+		console.error(`${LOG_PREFIX} Failed to initialize:`, err);
 		ui.notifications.error('Nimble Selector failed to load. Check the console (F12) for details.');
 	}
 });
@@ -237,7 +256,6 @@ Hooks.once('ready', async () => {
 /* ---------------------------------------- */
 
 Hooks.on('getSceneControlButtons', (controls) => {
-	// In v13, controls is an object keyed by group name (not an array).
 	const tokenGroup = controls.tokens;
 	if (!tokenGroup) return;
 
@@ -251,17 +269,10 @@ Hooks.on('getSceneControlButtons', (controls) => {
 });
 
 /* ---------------------------------------- */
-/*  Character Sheet Header Control          */
-/* ---------------------------------------- */
-
-// Header control is added via _patchCharacterSheetControls() in the ready hook.
-
-/* ---------------------------------------- */
 /*  Level-Up Detection (updateItem)         */
 /* ---------------------------------------- */
 
-Hooks.on('updateItem', (item, changes, options, userId) => {
-	// Only react on our own client
+Hooks.on('updateItem', (item, changes, _options, userId) => {
 	if (userId !== game.userId) return;
 	if (item.type !== 'class') return;
 	if (!foundry.utils.hasProperty(changes, 'system.classLevel')) return;
@@ -275,7 +286,7 @@ Hooks.on('updateItem', (item, changes, options, userId) => {
 	const newLevel = changes.system.classLevel;
 	if (newLevel < 2) return;
 
-	console.log(`${MODULE_ID} | Level-up detected: ${actor.name} ${newLevel - 1} → ${newLevel}`);
+	console.log(`${LOG_PREFIX} Level-up detected: ${actor.name} ${newLevel - 1} → ${newLevel}`);
 	orchestrator.openForLevelUp(actor, newLevel, newLevel);
 });
 
@@ -283,7 +294,7 @@ Hooks.on('updateItem', (item, changes, options, userId) => {
 /*  Character Creation (createItem)         */
 /* ---------------------------------------- */
 
-Hooks.on('createItem', (item, options, userId) => {
+Hooks.on('createItem', (item, _options, userId) => {
 	if (userId !== game.userId) return;
 	if (item.type !== 'class') return;
 
@@ -293,31 +304,29 @@ Hooks.on('createItem', (item, options, userId) => {
 	const actor = item.parent;
 	if (!actor || actor.type !== 'character') return;
 
-	console.log(`${MODULE_ID} | Class added: ${item.name} on ${actor.name}`);
+	console.log(`${LOG_PREFIX} Class added: ${item.name} on ${actor.name}`);
 
-	// Small delay to allow the system to finish its own item-creation logic
+	// Delay to allow the system to finish its own item-creation logic
 	// (HP, classData, etc.) before we open the panel.
 	setTimeout(() => {
 		orchestrator.openForActor(actor);
-	}, 500);
+	}, CLASS_CREATION_DELAY);
 });
 
 /* ---------------------------------------- */
 /*  Context Menu on Actor Directory         */
 /* ---------------------------------------- */
 
-Hooks.on('getActorDirectoryEntryContext', (html, contextOptions) => {
+Hooks.on('getActorDirectoryEntryContext', (_html, contextOptions) => {
 	contextOptions.push({
 		name: 'Nimble Selector',
 		icon: '<i class="fa-solid fa-arrow-up-right-dots"></i>',
 		condition: (li) => {
-			const id = _getDocumentId(li);
-			const actor = game.actors.get(id);
+			const actor = game.actors.get(_getDocumentId(li));
 			return actor?.type === 'character';
 		},
 		callback: (li) => {
-			const id = _getDocumentId(li);
-			const actor = game.actors.get(id);
+			const actor = game.actors.get(_getDocumentId(li));
 			if (actor && orchestrator) {
 				orchestrator.openForActor(actor);
 			}

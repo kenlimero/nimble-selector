@@ -1,3 +1,4 @@
+import { LOG_PREFIX } from '../utils/constants.mjs';
 import { CompendiumBrowser } from './CompendiumBrowser.mjs';
 
 /**
@@ -26,13 +27,23 @@ class ItemGranter {
 
 		if (!itemDataArray.length) return [];
 
-		return actor.createEmbeddedDocuments('Item', itemDataArray, { keepId: true });
+		try {
+			return await actor.createEmbeddedDocuments('Item', itemDataArray, { keepId: true });
+		} catch (err) {
+			console.error(`${LOG_PREFIX} Failed to grant items to ${actor.name}:`, err);
+			return [];
+		}
 	}
 
+	/**
+	 * Resolve a UUID and prepare item data for embedding.
+	 * @param {string} uuid
+	 * @returns {Promise<object|null>} Item data ready for createEmbeddedDocuments, or null
+	 */
 	async #prepareItemFromUuid(uuid) {
 		const sourceItem = await this.#compendiumBrowser.getFullDocument(uuid);
 		if (!sourceItem) {
-			console.warn(`nimble-selector | Could not resolve item: ${uuid}`);
+			console.warn(`${LOG_PREFIX} Could not resolve item: ${uuid}`);
 			return null;
 		}
 

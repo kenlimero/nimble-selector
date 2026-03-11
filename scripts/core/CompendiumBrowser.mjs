@@ -1,4 +1,47 @@
-import { PACK_NAMES } from '../utils/constants.mjs';
+import { PACK_NAMES, LOG_PREFIX, normalizeString, pushToMapArray } from '../utils/constants.mjs';
+
+/**
+ * @typedef {object} FeatureData
+ * @property {string} uuid
+ * @property {string} name
+ * @property {string} img
+ * @property {string} class
+ * @property {string} _normalizedClass
+ * @property {string} featureType
+ * @property {string} group
+ * @property {string} description
+ * @property {number[]} gainedAtLevels
+ * @property {boolean} subclass
+ */
+
+/**
+ * @typedef {object} SpellData
+ * @property {string} uuid
+ * @property {string} name
+ * @property {string} _normalizedName
+ * @property {string} img
+ * @property {string} school
+ * @property {string} _normalizedSchool
+ * @property {number} tier
+ * @property {boolean} isUtility
+ * @property {string} description
+ */
+
+/**
+ * @typedef {object} ItemData
+ * @property {string} uuid
+ * @property {string} name
+ * @property {string} img
+ * @property {string} objectType
+ * @property {string} _normalizedType
+ * @property {object} properties
+ * @property {string} description
+ * @property {string|null} weaponAttr
+ * @property {boolean} isRanged
+ * @property {string|null} armorType
+ * @property {number} priceValue
+ * @property {string} priceDenomination
+ */
 
 /**
  * Indexes and queries the Nimble system's compendium packs.
@@ -7,11 +50,17 @@ import { PACK_NAMES } from '../utils/constants.mjs';
 class CompendiumBrowser {
 	static #instance = null;
 
+	/** @type {Map<string, FeatureData[]>} Name-based feature index. */
 	#featureIndex = new Map();
+	/** @type {Map<string, FeatureData[]>} Class-based feature index. */
 	#featureByClassIndex = new Map();
+	/** @type {Map<string, SpellData>} UUID-keyed spell index. */
 	#spellIndex = new Map();
+	/** @type {Map<string, ItemData>} UUID-keyed item index. */
 	#itemIndex = new Map();
 	#initialized = false;
+	/** @type {Promise<void>|null} */
+	#initPromise = null;
 
 	constructor() {
 		if (CompendiumBrowser.#instance) {
@@ -19,6 +68,7 @@ class CompendiumBrowser {
 		}
 	}
 
+	/** @returns {CompendiumBrowser} */
 	static get instance() {
 		if (!CompendiumBrowser.#instance) {
 			CompendiumBrowser.#instance = new CompendiumBrowser();
@@ -26,13 +76,28 @@ class CompendiumBrowser {
 		return CompendiumBrowser.#instance;
 	}
 
+	/** @returns {boolean} */
 	get initialized() {
 		return this.#initialized;
 	}
 
+	/**
+	 * Initialize all compendium indexes in parallel.
+	 * Safe to call multiple times — subsequent calls are no-ops.
+	 * @returns {Promise<void>}
+	 */
 	async initialize() {
 		if (this.#initialized) return;
+		if (this.#initPromise) return this.#initPromise;
+		this.#initPromise = this.#doInitialize();
+		return this.#initPromise;
+	}
 
+	/**
+	 * Internal initialization — called only once.
+	 * @returns {Promise<void>}
+	 */
+	async #doInitialize() {
 		await Promise.all([
 			this.#indexFeatures(),
 			this.#indexSpells(),
@@ -42,10 +107,19 @@ class CompendiumBrowser {
 		this.#initialized = true;
 	}
 
+	/* ---------------------------------------- */
+	/*  Indexing                                 */
+	/* ---------------------------------------- */
+
+	/**
+	 * Index all class features from the compendium pack.
+	 * Builds both a name-based and class-based index for fast lookups.
+	 * @returns {Promise<void>}
+	 */
 	async #indexFeatures() {
 		const pack = game.packs.get(PACK_NAMES.classFeatures);
 		if (!pack) {
-			console.warn(`nimble-selector | Pack ${PACK_NAMES.classFeatures} not found`);
+			console.warn(`${LOG_PREFIX} Pack ${PACK_NAMES.classFeatures} not found`);
 			return;
 		}
 
@@ -53,51 +127,47 @@ class CompendiumBrowser {
 			fields: ['system.class', 'system.featureType', 'system.group', 'system.description', 'system.gainedAtLevel', 'system.gainedAtLevels', 'system.subclass'],
 		});
 
-		// Build a folder ID → class name map so features with empty class
-		// (e.g. savage-arsenal) can be resolved via their compendium folder.
 		const folderClassMap = this.#buildFolderClassMap(pack);
 
 		for (const entry of index) {
-			let cls = entry.system?.class ?? '';
-			if (!cls && entry.folder) {
-				cls = folderClassMap.get(entry.folder) ?? '';
-			}
+			const featureData = this.#buildFeatureData(entry, folderClassMap);
+			const nameKey = normalizeString(entry.name);
 
-			const normalizedClass = this.#normalizeString(cls);
-
-			// gainedAtLevels with gainedAtLevel fallback
-			let levels = entry.system?.gainedAtLevels;
-			if (!Array.isArray(levels) || levels.length === 0) {
-				const single = entry.system?.gainedAtLevel;
-				levels = single != null ? [single] : [];
-			}
-
-			const featureData = {
-				uuid: entry.uuid,
-				name: entry.name,
-				img: entry.img,
-				class: cls,
-				_normalizedClass: normalizedClass,
-				featureType: entry.system?.featureType ?? '',
-				group: entry.system?.group ?? '',
-				description: this.#extractDescription(entry.system?.description),
-				gainedAtLevels: levels,
-				subclass: entry.system?.subclass ?? false,
-			};
-
-			// Name-based index
-			const key = this.#normalizeString(entry.name);
-			if (!this.#featureIndex.has(key)) {
-				this.#featureIndex.set(key, []);
-			}
-			this.#featureIndex.get(key).push(featureData);
-
-			// Class-based index
-			if (!this.#featureByClassIndex.has(normalizedClass)) {
-				this.#featureByClassIndex.set(normalizedClass, []);
-			}
-			this.#featureByClassIndex.get(normalizedClass).push(featureData);
+			pushToMapArray(this.#featureIndex, nameKey, featureData);
+			pushToMapArray(this.#featureByClassIndex, featureData._normalizedClass, featureData);
 		}
+	}
+
+	/**
+	 * Build a FeatureData object from a compendium index entry.
+	 * @param {object} entry - Raw compendium index entry
+	 * @param {Map<string, string>} folderClassMap - Folder-to-class mapping
+	 * @returns {FeatureData}
+	 */
+	#buildFeatureData(entry, folderClassMap) {
+		let cls = entry.system?.class ?? '';
+		if (!cls && entry.folder) {
+			cls = folderClassMap.get(entry.folder) ?? '';
+		}
+
+		let levels = entry.system?.gainedAtLevels;
+		if (!Array.isArray(levels) || levels.length === 0) {
+			const single = entry.system?.gainedAtLevel;
+			levels = single != null ? [single] : [];
+		}
+
+		return {
+			uuid: entry.uuid,
+			name: entry.name,
+			img: entry.img,
+			class: cls,
+			_normalizedClass: normalizeString(cls),
+			featureType: entry.system?.featureType ?? '',
+			group: entry.system?.group ?? '',
+			description: CompendiumBrowser.#extractDescription(entry.system?.description),
+			gainedAtLevels: levels,
+			subclass: entry.system?.subclass ?? false,
+		};
 	}
 
 	/**
@@ -115,7 +185,7 @@ class CompendiumBrowser {
 		const rootNames = new Map();
 		for (const folder of pack.folders) {
 			if (!folder.folder) {
-				rootNames.set(folder._id, this.#normalizeString(folder.name));
+				rootNames.set(folder._id, normalizeString(folder.name));
 			}
 		}
 
@@ -134,10 +204,14 @@ class CompendiumBrowser {
 		return map;
 	}
 
+	/**
+	 * Index all spells from the compendium pack.
+	 * @returns {Promise<void>}
+	 */
 	async #indexSpells() {
 		const pack = game.packs.get(PACK_NAMES.spells);
 		if (!pack) {
-			console.warn(`nimble-selector | Pack ${PACK_NAMES.spells} not found`);
+			console.warn(`${LOG_PREFIX} Pack ${PACK_NAMES.spells} not found`);
 			return;
 		}
 
@@ -146,30 +220,29 @@ class CompendiumBrowser {
 		});
 
 		for (const entry of index) {
-			const props = entry.system?.properties?.selected;
-			const isUtility = Array.isArray(props)
-				? props.includes('utilitySpell')
-				: (props instanceof Set ? props.has('utilitySpell') : false);
-
 			const school = entry.system?.school ?? '';
 			this.#spellIndex.set(entry.uuid, {
 				uuid: entry.uuid,
 				name: entry.name,
-				_normalizedName: this.#normalizeString(entry.name),
+				_normalizedName: normalizeString(entry.name),
 				img: entry.img,
 				school,
-				_normalizedSchool: this.#normalizeString(school),
+				_normalizedSchool: normalizeString(school),
 				tier: entry.system?.tier ?? 0,
-				isUtility,
-				description: this.#extractDescription(entry.system?.description),
+				isUtility: CompendiumBrowser.#hasProperty(entry.system?.properties?.selected, 'utilitySpell'),
+				description: CompendiumBrowser.#extractDescription(entry.system?.description),
 			});
 		}
 	}
 
+	/**
+	 * Index all equipment items from the compendium pack.
+	 * @returns {Promise<void>}
+	 */
 	async #indexItems() {
 		const pack = game.packs.get(PACK_NAMES.items);
 		if (!pack) {
-			console.warn(`nimble-selector | Pack ${PACK_NAMES.items} not found`);
+			console.warn(`${LOG_PREFIX} Pack ${PACK_NAMES.items} not found`);
 			return;
 		}
 
@@ -180,8 +253,6 @@ class CompendiumBrowser {
 		for (const entry of index) {
 			const objectType = entry.system?.objectType ?? '';
 			const props = entry.system?.properties?.selected ?? [];
-			const descPublic = entry.system?.description?.public ?? '';
-
 			const price = entry.system?.price ?? {};
 
 			this.#itemIndex.set(entry.uuid, {
@@ -189,60 +260,65 @@ class CompendiumBrowser {
 				name: entry.name,
 				img: entry.img,
 				objectType,
-				_normalizedType: this.#normalizeString(objectType),
+				_normalizedType: normalizeString(objectType),
 				properties: entry.system?.properties ?? {},
-				description: this.#extractDescription(entry.system?.description),
-				weaponAttr: this.#extractWeaponAttr(entry.system?.activation),
+				description: CompendiumBrowser.#extractDescription(entry.system?.description),
+				weaponAttr: CompendiumBrowser.#extractWeaponAttr(entry.system?.activation),
 				isRanged: Array.isArray(props) && props.includes('range'),
-				armorType: this.#extractArmorType(descPublic),
+				armorType: CompendiumBrowser.#extractArmorType(entry.system?.description?.public ?? ''),
 				priceValue: price.value ?? 0,
 				priceDenomination: price.denomination ?? 'gp',
 			});
 		}
 	}
 
+	/* ---------------------------------------- */
+	/*  Query Methods                           */
+	/* ---------------------------------------- */
+
 	/**
 	 * Find compendium features matching the given names and class.
 	 * @param {string[]} featureNames - Feature names to search for
 	 * @param {string} classIdentifier - Class identifier to filter by
-	 * @returns {Array<{uuid: string, name: string, img: string, matched: boolean}>}
+	 * @returns {Array<{uuid: string|null, name: string, img: string, matched: boolean, description: string}>}
 	 */
 	findFeaturesByName(featureNames, classIdentifier) {
-		const results = [];
-		const normalizedClass = this.#normalizeString(classIdentifier);
+		const normalizedClass = normalizeString(classIdentifier);
 
-		for (const name of featureNames) {
-			const key = this.#normalizeString(name);
-			let candidates = this.#featureIndex.get(key) ?? [];
-
-			// If no match and name has a numeric suffix like (2), (3), try the base name
-			if (candidates.length === 0) {
-				const baseKey = this.#stripNumericSuffix(key);
-				if (baseKey !== key) {
-					candidates = this.#featureIndex.get(baseKey) ?? [];
-				}
-			}
-
-			// Prefer exact class match
-			let match = candidates.find(
-				(c) => c._normalizedClass === normalizedClass,
-			);
-
-			// Fall back to any match
-			if (!match && candidates.length > 0) {
-				match = candidates[0];
-			}
-
-			results.push({
+		return featureNames.map((name) => {
+			const match = this.#findBestFeatureMatch(name, normalizedClass);
+			return {
 				uuid: match?.uuid ?? null,
 				name,
 				img: match?.img ?? 'icons/svg/mystery-man.svg',
 				matched: !!match,
 				description: match?.description ?? '',
-			});
+			};
+		});
+	}
+
+	/**
+	 * Find the best matching feature for a name, preferring exact class match.
+	 * Falls back to base name without numeric suffix (e.g. "Extra Attack (2)").
+	 * @param {string} name
+	 * @param {string} normalizedClass
+	 * @returns {FeatureData|undefined}
+	 */
+	#findBestFeatureMatch(name, normalizedClass) {
+		const key = normalizeString(name);
+		let candidates = this.#featureIndex.get(key) ?? [];
+
+		// If no match and name has a numeric suffix like (2), (3), try the base name
+		if (candidates.length === 0) {
+			const baseKey = key.replace(/\s*\(\d+\)$/, '').trim();
+			if (baseKey !== key) {
+				candidates = this.#featureIndex.get(baseKey) ?? [];
+			}
 		}
 
-		return results;
+		// Prefer exact class match, fall back to first candidate
+		return candidates.find((c) => c._normalizedClass === normalizedClass)
+			?? candidates[0];
 	}
 
 	/**
@@ -251,11 +327,11 @@ class CompendiumBrowser {
 	 * @param {string} classIdentifier - e.g. "berserker"
 	 * @param {number} fromLevel - Start of level range (inclusive)
 	 * @param {number} toLevel - End of level range (inclusive)
-	 * @param {string|null} subclassIdentifier - e.g. "path-of-the-mountainheart"
-	 * @returns {{ progression: Array<{uuid, name, img, description, level, group}>, selectableGroups: Map<string, Array<{uuid, name, img, description, gainedAtLevels}>> }}
+	 * @param {string|null} [subclassIdentifier=null] - e.g. "path-of-the-mountainheart"
+	 * @returns {{ progression: Array<{uuid: string, name: string, img: string, description: string, level: number, group: string}>, selectableGroups: Map<string, FeatureData[]> }}
 	 */
 	getClassFeatures(classIdentifier, fromLevel, toLevel, subclassIdentifier = null) {
-		const normalizedClass = this.#normalizeString(classIdentifier);
+		const normalizedClass = normalizeString(classIdentifier);
 		const features = this.#featureByClassIndex.get(normalizedClass) ?? [];
 
 		const progression = [];
@@ -271,13 +347,9 @@ class CompendiumBrowser {
 			// Skip subclass features that don't match the selected subclass
 			if (isSubclass && (!subclassIdentifier || f.group !== subclassIdentifier)) continue;
 
-			// Skip non-subclass features from subclass groups
 			if (!isSubclass && !isProgression) {
-				// This is a selectable group feature
-				if (!selectableGroups.has(f.group)) {
-					selectableGroups.set(f.group, []);
-				}
-				selectableGroups.get(f.group).push(f);
+				// Selectable group feature
+				pushToMapArray(selectableGroups, f.group, f);
 				continue;
 			}
 
@@ -299,33 +371,26 @@ class CompendiumBrowser {
 
 	/**
 	 * Find spells matching the given schools and max tier.
-	 * Utility spells (those with the utilitySpell property) are only included
-	 * when includeUtility is true — this gates them behind the level requirement.
+	 * Utility spells are only included when includeUtility is true.
 	 * @param {string[]} schools - Spell school identifiers (real schools only, not "utility")
 	 * @param {number} maxTier - Maximum spell tier (inclusive)
 	 * @param {boolean} [includeUtility=false] - Whether to include utility-flagged spells
-	 * @returns {Array<{uuid: string, name: string, img: string, school: string, tier: number, isUtility: boolean}>}
+	 * @returns {SpellData[]}
 	 */
 	findSpellsBySchoolAndTier(schools, maxTier, includeUtility = false) {
 		const normalizedSchools = new Set(
-			schools.filter((s) => s !== 'utility').map((s) => this.#normalizeString(s)),
+			schools.filter((s) => s !== 'utility').map(normalizeString),
 		);
+
 		const results = [];
-
 		for (const spell of this.#spellIndex.values()) {
-			// Skip utility spells unless character has utility access
 			if (spell.isUtility && !includeUtility) continue;
-
 			if (normalizedSchools.has(spell._normalizedSchool) && spell.tier <= maxTier) {
 				results.push(spell);
 			}
 		}
 
-		results.sort((a, b) => {
-			if (a.tier !== b.tier) return a.tier - b.tier;
-			return a.name.localeCompare(b.name);
-		});
-
+		results.sort((a, b) => a.tier - b.tier || a.name.localeCompare(b.name));
 		return results;
 	}
 
@@ -338,7 +403,7 @@ class CompendiumBrowser {
 	 */
 	countSpellsBySchoolAndTier(schools, maxTier, includeUtility = false) {
 		const normalizedSchools = new Set(
-			schools.filter((s) => s !== 'utility').map((s) => this.#normalizeString(s)),
+			schools.filter((s) => s !== 'utility').map(normalizeString),
 		);
 		let count = 0;
 
@@ -355,10 +420,10 @@ class CompendiumBrowser {
 	/**
 	 * Find equipment items by type.
 	 * @param {string[]} objectTypes - e.g. ["weapon", "armor", "shield"]
-	 * @returns {Array<{uuid: string, name: string, img: string, objectType: string}>}
+	 * @returns {ItemData[]}
 	 */
 	findEquipmentByType(objectTypes) {
-		const normalizedTypes = new Set(objectTypes.map((t) => this.#normalizeString(t)));
+		const normalizedTypes = new Set(objectTypes.map(normalizeString));
 		const results = [];
 
 		for (const item of this.#itemIndex.values()) {
@@ -380,41 +445,60 @@ class CompendiumBrowser {
 		try {
 			return await fromUuid(uuid);
 		} catch (e) {
-			console.error(`nimble-selector | Failed to resolve UUID: ${uuid}`, e);
+			console.error(`${LOG_PREFIX} Failed to resolve UUID: ${uuid}`, e);
 			return null;
 		}
 	}
 
-	#extractWeaponAttr(activation) {
+	/* ---------------------------------------- */
+	/*  Static Extraction Helpers               */
+	/* ---------------------------------------- */
+
+	/**
+	 * Extract the primary weapon attribute from an activation formula.
+	 * @param {object|undefined} activation
+	 * @returns {'strength'|'dexterity'|null}
+	 */
+	static #extractWeaponAttr(activation) {
 		const formula = activation?.effects?.[0]?.formula ?? '';
 		if (formula.includes('@strength')) return 'strength';
 		if (formula.includes('@dexterity')) return 'dexterity';
 		return null;
 	}
 
-	#extractArmorType(descHtml) {
+	/**
+	 * Extract the armor type from an HTML description string.
+	 * @param {string} descHtml
+	 * @returns {string|null}
+	 */
+	static #extractArmorType(descHtml) {
 		const match = descHtml.match(/<strong>Type:<\/strong>\s*(\w+)/i);
 		return match ? match[1].toLowerCase() : null;
 	}
 
-	#normalizeString(str) {
-		return String(str ?? '').toLowerCase().trim().replace(/['']/g, "'");
+	/**
+	 * Check if a collection (Array or Set) contains a value.
+	 * @param {Array|Set|undefined} collection
+	 * @param {string} value
+	 * @returns {boolean}
+	 */
+	static #hasProperty(collection, value) {
+		if (Array.isArray(collection)) return collection.includes(value);
+		if (collection instanceof Set) return collection.has(value);
+		return false;
 	}
 
-	#stripNumericSuffix(str) {
-		return str.replace(/\s*\(\d+\)$/, '').trim();
-	}
-
-	#extractDescription(desc) {
+	/**
+	 * Extract a displayable description string from Nimble's various
+	 * description formats (string, spell object, item object, FoundryVTT standard).
+	 * @param {string|object|undefined} desc
+	 * @returns {string}
+	 */
+	static #extractDescription(desc) {
 		if (!desc) return '';
 		if (typeof desc === 'string') return desc;
 		if (typeof desc === 'object') {
-			// Nimble spells: { baseEffect, higherLevelEffect }
-			if (desc.baseEffect) return String(desc.baseEffect);
-			// Nimble objects: { public, unidentified, secret }
-			if (desc.public) return String(desc.public);
-			// Standard FoundryVTT: { value }
-			if (desc.value) return String(desc.value);
+			return String(desc.baseEffect ?? desc.public ?? desc.value ?? '');
 		}
 		return '';
 	}
