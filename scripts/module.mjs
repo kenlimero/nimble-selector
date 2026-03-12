@@ -235,10 +235,8 @@ Hooks.once('ready', async () => {
 	console.log(`${LOG_PREFIX} Loading data and indexing compendiums`);
 
 	try {
-		await Promise.all([
-			DataProvider.instance.load(),
-			CompendiumBrowser.instance.initialize(),
-		]);
+		await DataProvider.instance.load();
+		await CompendiumBrowser.instance.initialize();
 
 		orchestrator = new SelectorOrchestrator();
 
