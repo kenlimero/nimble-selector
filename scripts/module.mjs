@@ -206,6 +206,15 @@ Hooks.once('init', () => {
 		default: true,
 	});
 
+	game.settings.register(MODULE_ID, 'hideSecretSpells', {
+		name: 'NIMBLE_SELECTOR.settings.hideSecretSpells',
+		hint: 'NIMBLE_SELECTOR.settings.hideSecretSpellsHint',
+		scope: 'world',
+		config: true,
+		type: Boolean,
+		default: true,
+	});
+
 	// ── Keybinding (Shift+L) ─────────────────
 	game.keybindings.register(MODULE_ID, 'openSelector', {
 		name: 'NIMBLE_SELECTOR.keybindings.openSelector',

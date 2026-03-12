@@ -10,7 +10,9 @@
 			"autoSelectFeatures": "Auto-select Features",
 			"autoSelectFeaturesHint": "Automatically pre-select new class features that are not yet on the character sheet.",
 			"showFeaturesInPanel": "Show Features in Panel",
-			"showFeaturesInPanelHint": "Display the list of class features directly in the main selector panel."
+			"showFeaturesInPanelHint": "Display the list of class features directly in the main selector panel.",
+			"hideSecretSpells": "Hide Secret Spells",
+			"hideSecretSpellsHint": "Hide secret spells from the spell selector. Only the GM can toggle this setting."
 		},
 		"panel": {
 			"title": "Nimble Selector",

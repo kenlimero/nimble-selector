@@ -1,11 +1,11 @@
 {
-  "id": "nimble-selector-secret-spells",
-  "title": "Nimble Selector-secret-spells",
+  "id": "nimble-selector",
+  "title": "Nimble Selector",
   "description": "Automates class feature, spell, and equipment selection for the Nimble v2 system.",
-  "version": "0.15",
+  "version": "0.16",
   "compatibility": {
     "minimum": "13",
-    "verified": "13",
+    "verified": "13.351",
     "maximum": "13.999"
   },
   "relationships": {
@@ -26,20 +26,25 @@
   "authors": [
     {
       "name": "Kenlimero aka Ricco",
-      "url": "https://github.com/kenlimero"
+      "url": "https://github.com/kenlimero",
+      "flags": {}
     }
   ],
   "esmodules": [
     "scripts/module.mjs"
   ],
   "styles": [
-    "styles/nimble-selector.css"
+    {
+      "src": "styles/nimble-selector.css"
+    }
   ],
   "languages": [
     {
       "lang": "en",
       "name": "English",
-      "path": "lang/en.json"
+      "path": "lang/en.json",
+      "flags": {}
     }
-  ]
+  ],
+  "flags": {}
 }

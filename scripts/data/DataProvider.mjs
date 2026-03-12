@@ -20,6 +20,8 @@ class DataProvider {
 	#spellTiers = null;
 	/** @type {object|null} */
 	#equipmentProficiencies = null;
+	/** @type {Set<string>} Normalized names of secret spells. */
+	#secretSpellNames = new Set();
 	#loaded = false;
 	/** @type {Promise<void>|null} */
 	#loadPromise = null;
@@ -59,15 +61,19 @@ class DataProvider {
 	 * @returns {Promise<void>}
 	 */
 	async #doLoad() {
-		const [spellSchools, spellTiers, equipmentProficiencies] = await Promise.all([
+		const [spellSchools, spellTiers, equipmentProficiencies, secretSpells] = await Promise.all([
 			this.#fetchJSON('spell-schools.json'),
 			this.#fetchJSON('spell-tiers.json'),
 			this.#fetchJSON('equipment-proficiencies.json'),
+			this.#fetchJSON('secret-spells.json'),
 		]);
 
 		this.#spellSchools = spellSchools;
 		this.#spellTiers = spellTiers;
 		this.#equipmentProficiencies = equipmentProficiencies;
+		this.#secretSpellNames = new Set(
+			(Array.isArray(secretSpells) ? secretSpells : []).map((n) => n.toLowerCase().trim().replace(/['']/g, "'")),
+		);
 		this.#loaded = true;
 	}
 
@@ -226,6 +232,15 @@ class DataProvider {
 			}
 		}
 		return maxTier;
+	}
+
+	/**
+	 * Check if a spell name is in the secret spells list.
+	 * @param {string} normalizedName - Lowercased, trimmed spell name
+	 * @returns {boolean}
+	 */
+	isSecretSpell(normalizedName) {
+		return this.#secretSpellNames.has(normalizedName);
 	}
 
 	/**
