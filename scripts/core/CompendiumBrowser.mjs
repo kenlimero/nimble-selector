@@ -377,13 +377,16 @@ class CompendiumBrowser {
 	/**
 	 * Find spells matching the given schools and max tier.
 	 * Utility spells are only included when includeUtility is true.
+	 * Class-exclusive spells are filtered out when they belong to a different class.
 	 * @param {string[]} schools - Spell school identifiers (real schools only, not "utility")
 	 * @param {number} maxTier - Maximum spell tier (inclusive)
 	 * @param {boolean} [includeUtility=false] - Whether to include utility-flagged spells
+	 * @param {string|null} [classIdentifier=null] - Current class (used to filter class-exclusive spells)
 	 * @returns {SpellData[]}
 	 */
-	findSpellsBySchoolAndTier(schools, maxTier, includeUtility = false) {
+	findSpellsBySchoolAndTier(schools, maxTier, includeUtility = false, classIdentifier = null) {
 		const hideSecret = game.settings.get(MODULE_ID, 'hideSecretSpells');
+		const dataProvider = DataProvider.instance;
 		const normalizedSchools = new Set(
 			schools.filter((s) => s !== 'utility').map(normalizeString),
 		);
@@ -392,6 +395,7 @@ class CompendiumBrowser {
 		for (const spell of this.#spellIndex.values()) {
 			if (hideSecret && spell.isSecret) continue;
 			if (spell.isUtility && !includeUtility) continue;
+			if (classIdentifier && dataProvider.isExcludedByClass(spell._normalizedName, classIdentifier)) continue;
 			if (normalizedSchools.has(spell._normalizedSchool) && spell.tier <= maxTier) {
 				results.push(spell);
 			}
@@ -403,13 +407,16 @@ class CompendiumBrowser {
 
 	/**
 	 * Count spells matching the given schools and max tier (without allocating a results array).
+	 * Class-exclusive spells are filtered out when they belong to a different class.
 	 * @param {string[]} schools - Spell school identifiers (real schools only, not "utility")
 	 * @param {number} maxTier - Maximum spell tier (inclusive)
 	 * @param {boolean} [includeUtility=false] - Whether to include utility-flagged spells
+	 * @param {string|null} [classIdentifier=null] - Current class (used to filter class-exclusive spells)
 	 * @returns {number}
 	 */
-	countSpellsBySchoolAndTier(schools, maxTier, includeUtility = false) {
+	countSpellsBySchoolAndTier(schools, maxTier, includeUtility = false, classIdentifier = null) {
 		const hideSecret = game.settings.get(MODULE_ID, 'hideSecretSpells');
+		const dataProvider = DataProvider.instance;
 		const normalizedSchools = new Set(
 			schools.filter((s) => s !== 'utility').map(normalizeString),
 		);
@@ -418,6 +425,7 @@ class CompendiumBrowser {
 		for (const spell of this.#spellIndex.values()) {
 			if (hideSecret && spell.isSecret) continue;
 			if (spell.isUtility && !includeUtility) continue;
+			if (classIdentifier && dataProvider.isExcludedByClass(spell._normalizedName, classIdentifier)) continue;
 			if (normalizedSchools.has(spell._normalizedSchool) && spell.tier <= maxTier) {
 				count++;
 			}

@@ -141,7 +141,7 @@ class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 		}));
 
 		const spellCount = hasSpellcasting && maxTier >= 0
-			? this.#compendiumBrowser.countSpellsBySchoolAndTier(realSchools, maxTier, hasUtility)
+			? this.#compendiumBrowser.countSpellsBySchoolAndTier(realSchools, maxTier, hasUtility, this.#classIdentifier)
 			: 0;
 
 		return { hasSpellcasting, spellSchools, spellCount, maxTier };

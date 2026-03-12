@@ -22,6 +22,8 @@ class DataProvider {
 	#equipmentProficiencies = null;
 	/** @type {Set<string>} Normalized names of secret spells. */
 	#secretSpellNames = new Set();
+	/** @type {Map<string, string>} Normalized spell name → exclusive class identifier. */
+	#classExclusiveSpells = new Map();
 	#loaded = false;
 	/** @type {Promise<void>|null} */
 	#loadPromise = null;
@@ -61,11 +63,12 @@ class DataProvider {
 	 * @returns {Promise<void>}
 	 */
 	async #doLoad() {
-		const [spellSchools, spellTiers, equipmentProficiencies, secretSpells] = await Promise.all([
+		const [spellSchools, spellTiers, equipmentProficiencies, secretSpells, classExclusiveSpells] = await Promise.all([
 			this.#fetchJSON('spell-schools.json'),
 			this.#fetchJSON('spell-tiers.json'),
 			this.#fetchJSON('equipment-proficiencies.json'),
 			this.#fetchJSON('secret-spells.json'),
+			this.#fetchJSON('class-exclusive-spells.json'),
 		]);
 
 		this.#spellSchools = spellSchools;
@@ -73,6 +76,12 @@ class DataProvider {
 		this.#equipmentProficiencies = equipmentProficiencies;
 		this.#secretSpellNames = new Set(
 			(Array.isArray(secretSpells) ? secretSpells : []).map((n) => n.toLowerCase().trim().replace(/['']/g, "'")),
+		);
+		this.#classExclusiveSpells = new Map(
+			Object.entries(classExclusiveSpells ?? {}).map(([name, cls]) => [
+				name.toLowerCase().trim().replace(/['']/g, "'"),
+				cls.toLowerCase().trim(),
+			]),
 		);
 		this.#loaded = true;
 	}
@@ -241,6 +250,18 @@ class DataProvider {
 	 */
 	isSecretSpell(normalizedName) {
 		return this.#secretSpellNames.has(normalizedName);
+	}
+
+	/**
+	 * Check if a spell is exclusive to a class other than the given one.
+	 * @param {string} normalizedSpellName - Lowercased, trimmed spell name
+	 * @param {string} classIdentifier - Current class identifier
+	 * @returns {boolean} True if the spell is exclusive to another class (should be hidden)
+	 */
+	isExcludedByClass(normalizedSpellName, classIdentifier) {
+		const exclusiveClass = this.#classExclusiveSpells.get(normalizedSpellName);
+		if (!exclusiveClass) return false;
+		return exclusiveClass !== classIdentifier.toLowerCase().trim();
 	}
 
 	/**
