@@ -1,6 +1,6 @@
 {
-  "id": "nimble-selector",
-  "title": "Nimble Selector",
+  "id": "nimble-selector-secret-spells",
+  "title": "Nimble Selector-secret-spells",
   "description": "Automates class feature, spell, and equipment selection for the Nimble v2 system.",
   "version": "0.15",
   "compatibility": {

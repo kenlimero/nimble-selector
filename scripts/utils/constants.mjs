@@ -1,6 +1,6 @@
 /** @module constants */
 
-export const MODULE_ID = 'nimble-selector';
+export const MODULE_ID = 'nimble-selector-secret-spells';
 
 /** @type {string} Prefix for console log messages. */
 export const LOG_PREFIX = `${MODULE_ID} |`;
