@@ -156,15 +156,18 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 	}
 
 	/**
-	 * Convert a copper piece amount to { gp, sp, cp } coin breakdown.
-	 * @param {number} totalCp
+	 * Aggregate selected items' prices by denomination.
 	 * @returns {{gp: number, sp: number, cp: number}}
 	 */
-	static #formatCpToCoins(totalCp) {
-		const gp = Math.floor(totalCp / DENOMINATION_TO_CP.gp);
-		const sp = Math.floor((totalCp % DENOMINATION_TO_CP.gp) / DENOMINATION_TO_CP.sp);
-		const cp = totalCp % DENOMINATION_TO_CP.sp;
-		return { gp, sp, cp };
+	#getSelectionTotalByDenom() {
+		const totals = { gp: 0, sp: 0, cp: 0 };
+		for (const uuid of this.#selectedUuids) {
+			const item = this.#equipmentByUuid.get(uuid);
+			if (!item) continue;
+			const denom = item.priceDenomination ?? 'gp';
+			totals[denom] = (totals[denom] ?? 0) + (item.priceValue ?? 0);
+		}
+		return totals;
 	}
 
 	/* ---------------------------------------- */
@@ -204,6 +207,7 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 
 		const selectedCount = this.#selectedUuids.size;
 		const selectionTotalCp = this.#getSelectionTotalCp();
+		const selectionTotal = this.#getSelectionTotalByDenom();
 		const canAfford = selectionTotalCp <= wealthCp;
 
 		return {
@@ -218,7 +222,7 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 			hasSelection: selectedCount > 0,
 			canConfirm: selectedCount > 0 && (!this.#payTheBill || canAfford),
 			wealth: this.#getActorWealth(),
-			selectionTotal: EquipmentSelector.#formatCpToCoins(selectionTotalCp),
+			selectionTotal,
 			hasSelectionCost: selectionTotalCp > 0,
 			canAfford,
 		};
@@ -259,21 +263,36 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 	/* ---------------------------------------- */
 
 	/**
-	 * Deduct a total cost in copper pieces from the actor's currency.
-	 * Converts the remaining amount back to optimal gp/sp/cp breakdown.
-	 * @param {number} totalCp
+	 * Deduct costs per denomination from the actor's currency.
+	 * If a denomination doesn't have enough, the deficit cascades to lower
+	 * denominations (GP→SP→CP) without ever consolidating back up.
+	 * @param {{gp: number, sp: number, cp: number}} costs
 	 * @returns {Promise<boolean>} false if the actor cannot afford it
 	 */
-	async #deductCurrency(totalCp) {
-		const remainingCp = this.#getActorWealthInCp() - totalCp;
-		if (remainingCp < 0) return false;
+	async #deductCurrency(costs) {
+		const wallet = this.#getActorWealth();
 
-		const newCoins = EquipmentSelector.#formatCpToCoins(remainingCp);
+		// Deduct GP — shortfall cascades to SP
+		let gpDeduct = Math.min(costs.gp, wallet.gp);
+		let gpShortfall = costs.gp - gpDeduct;
+		wallet.gp -= gpDeduct;
+
+		// Convert GP shortfall to SP and add to SP cost
+		let spNeeded = costs.sp + gpShortfall * 10;
+		let spDeduct = Math.min(spNeeded, wallet.sp);
+		let spShortfall = spNeeded - spDeduct;
+		wallet.sp -= spDeduct;
+
+		// Convert SP shortfall to CP and add to CP cost
+		let cpNeeded = costs.cp + spShortfall * 10;
+		if (cpNeeded > wallet.cp) return false;
+		wallet.cp -= cpNeeded;
+
 		try {
 			await this.#actor.update({
-				'system.currency.gp.value': newCoins.gp,
-				'system.currency.sp.value': newCoins.sp,
-				'system.currency.cp.value': newCoins.cp,
+				'system.currency.gp.value': wallet.gp,
+				'system.currency.sp.value': wallet.sp,
+				'system.currency.cp.value': wallet.cp,
 			});
 			return true;
 		} catch (err) {
@@ -328,8 +347,7 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		if (!uuids.length) return;
 
 		if (this.#payTheBill) {
-			const totalCp = this.#getSelectionTotalCp();
-			if (totalCp > this.#getActorWealthInCp()) {
+			if (this.#getSelectionTotalCp() > this.#getActorWealthInCp()) {
 				ui.notifications.warn(game.i18n.localize('NIMBLE_SELECTOR.equipment.cannotAfford'));
 				return;
 			}
@@ -339,7 +357,7 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 			const granted = await this.#granter.grantItemsByUuid(this.#actor, uuids);
 			if (!granted.length) return;
 
-			await this.#deductCurrency(totalCp);
+			await this.#deductCurrency(this.#getSelectionTotalByDenom());
 		} else {
 			await this.#granter.grantItemsByUuid(this.#actor, uuids);
 		}
