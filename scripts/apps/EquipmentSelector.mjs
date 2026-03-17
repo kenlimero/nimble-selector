@@ -352,10 +352,11 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 				return;
 			}
 
-			// Grant items first, then deduct currency — if granting fails,
-			// the actor keeps their money.
-			const granted = await this.#granter.grantItemsByUuid(this.#actor, uuids);
-			if (!granted.length) return;
+			// Grant items first, then deduct currency.
+			// Note: when the system stacks an already-owned item (quantity
+			// increment instead of creation), createEmbeddedDocuments returns []
+			// but the grant still succeeded, so we must not bail on empty result.
+			await this.#granter.grantItemsByUuid(this.#actor, uuids);
 
 			await this.#deductCurrency(this.#getSelectionTotalByDenom());
 		} else {
