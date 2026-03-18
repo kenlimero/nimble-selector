@@ -56,10 +56,11 @@
 			<div class="nimble-selector__card-grid">
 				{{#each filteredEquipment}}
 					<div class="nimble-selector__card {{#if this.selected}}nimble-selector__card--selected{{/if}} {{#if this.tooExpensive}}nimble-selector__card--too-expensive{{/if}}"
-						 data-action="toggleEquipment" data-uuid="{{this.uuid}}"
+						 data-action="addEquipment" data-uuid="{{this.uuid}}"
 						 data-tooltip="{{this.description}}" data-tooltip-direction="LEFT">
-						<input type="checkbox" class="nimble-selector__card-checkbox"
-							   {{#if this.selected}}checked{{/if}} />
+						{{#if this.selected}}
+							<span class="nimble-selector__card-qty">{{this.quantity}}</span>
+						{{/if}}
 						<img class="nimble-selector__card-img" src="{{this.img}}" alt="{{this.name}}" />
 						<div class="nimble-selector__card-content">
 							<div class="nimble-selector__card-name">{{this.name}}</div>

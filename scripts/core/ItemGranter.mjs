@@ -24,27 +24,46 @@ class ItemGranter {
 	 * Stackable items already owned get their quantity incremented;
 	 * all other items are created as new embedded documents.
 	 * @param {Actor} actor - The target actor
-	 * @param {string[]} uuids - Array of compendium UUIDs
+	 * @param {string[]|Map<string, number>} uuidsOrQuantities - Array of UUIDs or Map of UUID → quantity
 	 * @returns {Promise<Item[]>} The created embedded items (does not include stacked ones)
 	 */
-	async grantItemsByUuid(actor, uuids) {
-		if (!uuids.length) return [];
+	async grantItemsByUuid(actor, uuidsOrQuantities) {
+		/** @type {Map<string, number>} */
+		const quantities = uuidsOrQuantities instanceof Map
+			? uuidsOrQuantities
+			: new Map(uuidsOrQuantities.map((uuid) => [uuid, 1]));
 
-		const prepared = await Promise.all(uuids.map((uuid) => this.#prepareItemFromUuid(uuid)));
-		const itemDataArray = prepared.filter(Boolean);
+		if (!quantities.size) return [];
 
-		if (!itemDataArray.length) return [];
+		const entries = await Promise.all(
+			[...quantities.entries()].map(async ([uuid, qty]) => {
+				const data = await this.#prepareItemFromUuid(uuid);
+				return data ? { data, qty } : null;
+			}),
+		);
+		const validEntries = entries.filter(Boolean);
+
+		if (!validEntries.length) return [];
 
 		// Separate items that should be stacked from those that need creation
 		const toCreate = [];
 		const stackUpdates = [];
 
-		for (const itemData of itemDataArray) {
+		for (const { data: itemData, qty } of validEntries) {
 			const existing = this.#findStackTarget(actor, itemData);
 			if (existing) {
-				stackUpdates.push({ item: existing, qty: existing.system.quantity + 1 });
-			} else {
+				stackUpdates.push({ item: existing, qty: existing.system.quantity + qty });
+			} else if (STACKABLE_SIZE_TYPES.has(itemData.system?.objectSizeType)) {
+				// Stackable new item: set quantity on the item data
+				itemData.system = itemData.system ?? {};
+				itemData.system.quantity = qty;
 				toCreate.push(itemData);
+			} else {
+				// Non-stackable: create one copy per unit
+				toCreate.push(itemData);
+				for (let i = 1; i < qty; i++) {
+					toCreate.push({ ...itemData, _id: foundry.utils.randomID() });
+				}
 			}
 		}
 

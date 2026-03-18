@@ -32,8 +32,8 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 	#equipmentByUuid = new Map();
 	/** @type {import('../data/EquipmentProficiencyResolver.mjs').Proficiencies} */
 	#proficiencies = { armor: [], weapons: [] };
-	/** @type {Set<string>} */
-	#selectedUuids = new Set();
+	/** @type {Map<string, number>} UUID → selected quantity. */
+	#selectedQuantities = new Map();
 	/** @type {string} Active category tab filter (empty = show all). */
 	#activeCategory = '';
 	#showOnlyProficient = true;
@@ -57,7 +57,7 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		},
 		actions: {
 			filterCategory: EquipmentSelector.#onFilterCategory,
-			toggleEquipment: EquipmentSelector.#onToggleEquipment,
+			addEquipment: EquipmentSelector.#onAddEquipment,
 			toggleProficiencyFilter: EquipmentSelector.#onToggleProficiencyFilter,
 			togglePayTheBill: EquipmentSelector.#onTogglePayTheBill,
 			confirm: EquipmentSelector.#onConfirm,
@@ -148,9 +148,9 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 	 */
 	#getSelectionTotalCp() {
 		let total = 0;
-		for (const uuid of this.#selectedUuids) {
+		for (const [uuid, qty] of this.#selectedQuantities) {
 			const item = this.#equipmentByUuid.get(uuid);
-			if (item) total += this.#getItemPriceInCp(item);
+			if (item) total += this.#getItemPriceInCp(item) * qty;
 		}
 		return total;
 	}
@@ -161,11 +161,11 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 	 */
 	#getSelectionTotalByDenom() {
 		const totals = { gp: 0, sp: 0, cp: 0 };
-		for (const uuid of this.#selectedUuids) {
+		for (const [uuid, qty] of this.#selectedQuantities) {
 			const item = this.#equipmentByUuid.get(uuid);
 			if (!item) continue;
 			const denom = item.priceDenomination ?? 'gp';
-			totals[denom] = (totals[denom] ?? 0) + (item.priceValue ?? 0);
+			totals[denom] = (totals[denom] ?? 0) + (item.priceValue ?? 0) * qty;
 		}
 		return totals;
 	}
@@ -205,7 +205,8 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		const armorSummary = this.#proficiencies.armor.length ? this.#proficiencies.armor.join(', ') : none;
 		const weaponSummary = this.#proficiencies.weapons.length ? this.#proficiencies.weapons.join(', ') : none;
 
-		const selectedCount = this.#selectedUuids.size;
+		let selectedCount = 0;
+		for (const qty of this.#selectedQuantities.values()) selectedCount += qty;
 		const selectionTotalCp = this.#getSelectionTotalCp();
 		const selectionTotal = this.#getSelectionTotalByDenom();
 		const canAfford = selectionTotalCp <= wealthCp;
@@ -235,9 +236,11 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 	 * @returns {object}
 	 */
 	#enrichEquipmentForDisplay(item, wealthCp) {
+		const quantity = this.#selectedQuantities.get(item.uuid) ?? 0;
 		return {
 			...item,
-			selected: this.#selectedUuids.has(item.uuid),
+			selected: quantity > 0,
+			quantity,
 			typeLabel: CATEGORY_CONFIG[item.objectType]?.label ?? item.objectType,
 			priceLabel: this.#formatPrice(item),
 			tooExpensive: this.#payTheBill && this.#getItemPriceInCp(item) > wealthCp,
@@ -248,6 +251,10 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 	_onRender(_context, _options) {
 		const scrollArea = this.element?.querySelector('.nimble-selector__scroll-area');
 		if (scrollArea) scrollArea.scrollTop = this.#scrollTop;
+
+		// Right-click to decrease quantity
+		const cardGrid = this.element?.querySelector('.nimble-selector__card-grid');
+		cardGrid?.addEventListener('contextmenu', (event) => this.#onRemoveEquipment(event));
 	}
 
 	/**
@@ -314,14 +321,31 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 	}
 
 	/** @this {EquipmentSelector} */
-	static #onToggleEquipment(_event, target) {
+	static #onAddEquipment(_event, target) {
 		const uuid = target.dataset.uuid;
 		if (!uuid) return;
 
-		if (this.#selectedUuids.has(uuid)) {
-			this.#selectedUuids.delete(uuid);
+		const current = this.#selectedQuantities.get(uuid) ?? 0;
+		this.#selectedQuantities.set(uuid, current + 1);
+		this.#saveScrollPosition();
+		this.render();
+	}
+
+	/**
+	 * Handle right-click on an equipment card to decrease quantity.
+	 * @param {MouseEvent} event
+	 */
+	#onRemoveEquipment(event) {
+		const target = event.target.closest('[data-uuid]');
+		if (!target) return;
+		event.preventDefault();
+
+		const uuid = target.dataset.uuid;
+		const current = this.#selectedQuantities.get(uuid) ?? 0;
+		if (current <= 1) {
+			this.#selectedQuantities.delete(uuid);
 		} else {
-			this.#selectedUuids.add(uuid);
+			this.#selectedQuantities.set(uuid, current - 1);
 		}
 		this.#saveScrollPosition();
 		this.render();
@@ -343,8 +367,9 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 
 	/** @this {EquipmentSelector} */
 	static async #onConfirm() {
-		const uuids = [...this.#selectedUuids].filter(Boolean);
-		if (!uuids.length) return;
+		if (!this.#selectedQuantities.size) return;
+
+		const quantities = new Map(this.#selectedQuantities);
 
 		if (this.#payTheBill) {
 			if (this.#getSelectionTotalCp() > this.#getActorWealthInCp()) {
@@ -352,21 +377,19 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 				return;
 			}
 
-			// Grant items first, then deduct currency.
-			// Note: when the system stacks an already-owned item (quantity
-			// increment instead of creation), createEmbeddedDocuments returns []
-			// but the grant still succeeded, so we must not bail on empty result.
-			await this.#granter.grantItemsByUuid(this.#actor, uuids);
-
+			await this.#granter.grantItemsByUuid(this.#actor, quantities);
 			await this.#deductCurrency(this.#getSelectionTotalByDenom());
 		} else {
-			await this.#granter.grantItemsByUuid(this.#actor, uuids);
+			await this.#granter.grantItemsByUuid(this.#actor, quantities);
 		}
 
-		this.#selectedUuids.clear();
+		let totalCount = 0;
+		for (const qty of quantities.values()) totalCount += qty;
+
+		this.#selectedQuantities.clear();
 		ui.notifications.info(
 			game.i18n.format('NIMBLE_SELECTOR.notifications.grantedEquipment', {
-				count: uuids.length,
+				count: totalCount,
 				name: this.#actor.name,
 			}),
 		);
