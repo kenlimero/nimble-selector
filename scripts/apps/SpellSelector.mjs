@@ -128,7 +128,13 @@ class SpellSelector extends ScrollPositionMixin(HandlebarsApplicationMixin(Appli
 		const hasUtility = this.#grantedSchools.includes('utility');
 		const realSchools = this.#grantedSchools.filter((s) => s !== 'utility');
 
-		this.#allSpells = this.#compendiumBrowser.findSpellsBySchoolAndTier(realSchools, this.#maxTier, hasUtility, this.#classIdentifier, this.#minTier);
+		this.#allSpells = this.#compendiumBrowser.findSpells({
+			schools: realSchools,
+			maxTier: this.#maxTier,
+			minTier: this.#minTier,
+			includeUtility: hasUtility,
+			classIdentifier: this.#classIdentifier,
+		});
 		this.#spellsByUuid = new Map(this.#allSpells.map((s) => [s.uuid, s]));
 		this.#ownedSpellKeys = buildOwnedItemKeys(this.#actor, 'spell');
 		this.#dataLoaded = true;

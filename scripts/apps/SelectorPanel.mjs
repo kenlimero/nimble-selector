@@ -1,4 +1,4 @@
-import { MODULE_ID, TEMPLATE_PATH, SCHOOL_ICONS, capitalize } from '../utils/constants.mjs';
+import { MODULE_ID, TEMPLATE_PATH, SCHOOL_ICONS, LOG_PREFIX, capitalize } from '../utils/constants.mjs';
 import { ClassFeatureResolver } from '../data/ClassFeatureResolver.mjs';
 import { SpellSchoolResolver } from '../data/SpellSchoolResolver.mjs';
 import { SpellTierResolver } from '../data/SpellTierResolver.mjs';
@@ -39,8 +39,17 @@ class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 	#compendiumBrowser = CompendiumBrowser.instance;
 	/** @type {SchoolChoiceResolver} */
 	#choiceResolver = new SchoolChoiceResolver();
-	/** @type {Map<string, Set<string>>} Transient UI state: key → selected schools (before confirm). */
+	/**
+	 * Transient UI state: choice key → selected schools (before confirm).
+	 * @type {Map<string, Set<string>>}
+	 */
 	#pendingSelections = new Map();
+	/**
+	 * Cached choice counts from the last prepareContext, keyed by choice key.
+	 * Avoids re-calling getPendingChoices in action handlers.
+	 * @type {Map<string, number>}
+	 */
+	#choiceCounts = new Map();
 
 	/** @type {ClassFeatureSelector|null} */
 	#featureSelector = null;
@@ -159,7 +168,7 @@ class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 		}));
 
 		const spellCount = hasSpellcasting && maxTier >= 0 && realSchools.length > 0
-			? this.#compendiumBrowser.countSpellsBySchoolAndTier(realSchools, maxTier, hasUtility, this.#classIdentifier, minTier)
+			? this.#compendiumBrowser.countSpells({ schools: realSchools, maxTier, minTier, includeUtility: hasUtility, classIdentifier: this.#classIdentifier })
 			: 0;
 
 		return { hasSpellcasting, spellSchools, spellCount, maxTier };
@@ -186,7 +195,8 @@ class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 
 	/**
 	 * Build school choice data for the panel template.
-	 * @returns {{ hasSchoolChoices: boolean, pendingChoices: Array, confirmedChoices: Array, totalChoiceCount: number, schoolIcons: Record<string, string> }}
+	 * Also caches choice counts for use in action handlers.
+	 * @returns {{ pendingChoices: import('../data/SchoolChoiceResolver.mjs').PendingChoice[], confirmedChoices: import('../data/SchoolChoiceResolver.mjs').ConfirmedChoice[], schoolIcons: Record<string, string> }}
 	 */
 	#prepareSchoolChoices() {
 		const pendingChoices = this.#choiceResolver.getPendingChoices(
@@ -196,8 +206,10 @@ class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 			this.#actor, this.#classIdentifier, this.#level, this.#subclassIdentifier,
 		);
 
-		// Enrich each pending choice with selection state for the template
+		// Cache counts and enrich pending choices with UI state
+		this.#choiceCounts.clear();
 		for (const choice of pendingChoices) {
+			this.#choiceCounts.set(choice.key, choice.count);
 			const selections = this.#pendingSelections.get(choice.key);
 			choice.isReady = selections?.size === choice.count;
 			choice.label = game.i18n.format('NIMBLE_SELECTOR.schoolChoice.title', { count: choice.count });
@@ -207,17 +219,9 @@ class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 			}));
 		}
 
-		const totalChoiceCount = pendingChoices.reduce((sum, c) => sum + c.count, 0)
-			+ confirmedChoices.reduce((sum, c) => sum + c.count, 0);
-
-		const headerLabel = game.i18n.format('NIMBLE_SELECTOR.schoolChoice.title', { count: totalChoiceCount });
-
 		return {
-			hasSchoolChoices: pendingChoices.length > 0 || confirmedChoices.length > 0,
 			pendingChoices,
 			confirmedChoices,
-			totalChoiceCount,
-			headerLabel,
 			schoolIcons: SCHOOL_ICONS,
 		};
 	}
@@ -271,16 +275,11 @@ class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 
 	/** @this {SelectorPanel} */
 	static #onSelectSchoolChoice(_event, target) {
-		const key = target.dataset.choiceKey;
-		const school = target.dataset.school;
+		const { choiceKey: key, school } = target.dataset;
 		if (!key || !school) return;
 
-		// Find the choice to know its count
-		const pending = this.#choiceResolver.getPendingChoices(
-			this.#actor, this.#classIdentifier, this.#level, this.#subclassIdentifier,
-		);
-		const choice = pending.find((c) => c.key === key);
-		if (!choice) return;
+		const maxCount = this.#choiceCounts.get(key);
+		if (maxCount == null) return;
 
 		let selections = this.#pendingSelections.get(key);
 		if (!selections) {
@@ -291,13 +290,8 @@ class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 		if (selections.has(school)) {
 			selections.delete(school);
 		} else {
-			// If count is 1, replace; otherwise add up to count
-			if (choice.count === 1) {
-				selections.clear();
-			}
-			if (selections.size < choice.count) {
-				selections.add(school);
-			}
+			if (maxCount === 1) selections.clear();
+			if (selections.size < maxCount) selections.add(school);
 		}
 
 		this.render();
@@ -311,14 +305,15 @@ class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 		const selections = this.#pendingSelections.get(key);
 		if (!selections?.size) return;
 
-		// Validate selection count matches the required count
-		const pending = this.#choiceResolver.getPendingChoices(
-			this.#actor, this.#classIdentifier, this.#level, this.#subclassIdentifier,
-		);
-		const choice = pending.find((c) => c.key === key);
-		if (!choice || selections.size !== choice.count) return;
+		const expectedCount = this.#choiceCounts.get(key);
+		if (expectedCount == null || selections.size !== expectedCount) return;
 
-		await this.#choiceResolver.saveChoice(this.#actor, key, [...selections]);
+		try {
+			await this.#choiceResolver.saveChoice(this.#actor, key, [...selections]);
+		} catch (err) {
+			console.error(`${LOG_PREFIX} Failed to save school choice "${key}":`, err);
+			return;
+		}
 		this.#pendingSelections.delete(key);
 
 		// Close SpellSelector so it reloads with updated schools
@@ -333,8 +328,18 @@ class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 		const key = target.dataset.choiceKey;
 		if (!key) return;
 
-		await this.#choiceResolver.removeChoice(this.#actor, key);
+		try {
+			await this.#choiceResolver.removeChoice(this.#actor, key);
+		} catch (err) {
+			console.error(`${LOG_PREFIX} Failed to remove school choice "${key}":`, err);
+			return;
+		}
 		this.#pendingSelections.delete(key);
+
+		// Close SpellSelector so it reloads without the removed school
+		this.#spellSelector?.close();
+		this.#spellSelector = null;
+
 		this.render();
 	}
 }

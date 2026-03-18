@@ -270,12 +270,22 @@ class DataProvider {
 		if (subclassIdentifier) {
 			const subTiers = classData?.subclasses?.[subclassIdentifier];
 			if (subTiers) {
-				return Math.min(...Object.values(subTiers));
+				return DataProvider.#findMinTier(subTiers);
 			}
 		}
 
 		if (!classData?.base) return -1;
-		return Math.min(...Object.values(classData.base));
+		return DataProvider.#findMinTier(classData.base);
+	}
+
+	/**
+	 * Find the lowest tier value in a tier map.
+	 * @param {Record<string, number>} tierMap
+	 * @returns {number} Minimum tier, or -1 if the map is empty
+	 */
+	static #findMinTier(tierMap) {
+		const values = Object.values(tierMap);
+		return values.length > 0 ? Math.min(...values) : -1;
 	}
 
 	/**
