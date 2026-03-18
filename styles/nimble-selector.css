@@ -512,3 +512,90 @@
 .nimble-selector__notification i {
 	color: var(--nimble-hint-icon-color, hsl(0, 0%, 24%));
 }
+
+/* --- School Choice Section --- */
+
+.nimble-selector__school-choice {
+	padding: 0.5rem;
+	border-bottom: 1px solid var(--nimble-card-border-color, hsla(41, 18%, 54%, 25%));
+	display: flex;
+	flex-direction: column;
+	gap: 0.4rem;
+}
+
+.nimble-selector__school-choice:last-child {
+	border-bottom: none;
+}
+
+.nimble-selector__school-choice-label {
+	font-size: var(--nimble-sm-text, 0.833rem);
+	font-weight: 700;
+	color: var(--nimble-accent-color, hsl(223, 14%, 45%));
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+}
+
+.nimble-selector__school-choice--confirmed .nimble-selector__school-choice-label {
+	color: var(--nimble-roll-success-color, hsl(109, 76%, 18%));
+}
+
+.nimble-selector__school-choice-options {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.3rem;
+}
+
+.nimble-selector__school-choice-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.3rem;
+	padding: 0.3rem 0.7rem;
+	border: 1px solid var(--nimble-card-border-color, hsla(41, 18%, 54%, 25%));
+	border-radius: 14px;
+	background: var(--nimble-box-background-color, hsl(48, 17%, 97%));
+	font-family: var(--nimble-primary-font, 'Roboto Condensed', sans-serif);
+	font-size: var(--nimble-sm-text, 0.833rem);
+	font-weight: 600;
+	cursor: pointer;
+	transition: var(--nimble-standard-transition, all 0.15s ease-in-out);
+}
+
+.nimble-selector__school-choice-btn:hover {
+	box-shadow: var(--nimble-card-box-shadow, hsla(0, 0%, 0%, 0.24) 0 3px 8px);
+}
+
+.nimble-selector__school-choice-btn--selected {
+	background: var(--nimble-selected-tag-background-color, hsl(293, 10%, 35%));
+	border-color: var(--nimble-selected-tag-background-color, hsl(293, 10%, 35%));
+	color: white;
+}
+
+.nimble-selector__school-choice-btn--selected i {
+	color: white;
+}
+
+.nimble-selector__school-choice-btn--locked {
+	background: var(--nimble-hint-background-color, hsla(223, 14%, 45%, 0.1));
+	border-color: var(--nimble-hint-border-color, hsla(223, 14%, 45%, 0.2));
+	cursor: default;
+	opacity: 0.8;
+}
+
+.nimble-selector__school-choice-btn--locked:hover {
+	box-shadow: none;
+}
+
+.nimble-selector__edit-choice-btn {
+	background: none;
+	border: none;
+	cursor: pointer;
+	opacity: 0.5;
+	padding: 4px 6px;
+	font-size: 0.85rem;
+	transition: opacity 0.15s;
+}
+
+.nimble-selector__edit-choice-btn:hover {
+	opacity: 1;
+}

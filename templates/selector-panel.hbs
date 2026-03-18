@@ -52,6 +52,35 @@
 				<span class="nimble-selector__section-badge">{{spellCount}}</span>
 			</div>
 			<div class="nimble-selector__section-body">
+				{{!-- Pending school choices (shown only when unresolved) --}}
+				{{#each pendingChoices}}
+				<div class="nimble-selector__school-choice" data-choice-key="{{this.key}}">
+					<div class="nimble-selector__school-choice-label">
+						{{this.label}}
+					</div>
+					<div class="nimble-selector__school-choice-options">
+						{{#each this.availableOptions}}
+						<button type="button"
+							class="nimble-selector__school-choice-btn {{#if this.selected}}nimble-selector__school-choice-btn--selected{{/if}}"
+							data-action="selectSchoolChoice"
+							data-choice-key="{{../key}}"
+							data-school="{{this.id}}">
+							<i class="{{lookup @root.schoolIcons this.id}} nimble-selector__school-icon--{{this.id}}"></i>
+							{{capitalize this.id}}
+						</button>
+						{{/each}}
+					</div>
+					<button type="button"
+						class="nimble-selector__btn nimble-selector__btn--small"
+						data-action="confirmSchoolChoice"
+						data-choice-key="{{this.key}}"
+						{{#unless this.isReady}}disabled{{/unless}}>
+						<i class="fa-solid fa-check"></i> {{localize "NIMBLE_SELECTOR.schoolChoice.confirm"}}
+					</button>
+				</div>
+				{{/each}}
+
+				{{!-- Spell schools display (with edit gear for confirmed choices) --}}
 				{{#if spellSchools.length}}
 					<div class="nimble-selector__filter-bar">
 						{{#each spellSchools}}
@@ -60,13 +89,24 @@
 								{{this.label}}
 							</span>
 						{{/each}}
+						{{#each confirmedChoices}}
+							<button type="button"
+								class="nimble-selector__filter-btn nimble-selector__edit-choice-btn"
+								data-action="editSchoolChoice"
+								data-choice-key="{{this.key}}"
+								title="{{localize "NIMBLE_SELECTOR.schoolChoice.edit"}}">
+								<i class="fa-solid fa-gear"></i>
+							</button>
+						{{/each}}
 					</div>
 					<div class="nimble-selector__notification">
 						<i class="fa-solid fa-circle-info"></i>
 						{{localize "NIMBLE_SELECTOR.panel.maxTier"}}: {{maxTier}}
 					</div>
 				{{else}}
+					{{#unless pendingChoices.length}}
 					<div class="nimble-selector__empty">{{localize "NIMBLE_SELECTOR.panel.noSchools"}}</div>
+					{{/unless}}
 				{{/if}}
 			</div>
 		</div>

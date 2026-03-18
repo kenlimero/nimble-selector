@@ -7,6 +7,7 @@ import { CompendiumBrowser } from '../core/CompendiumBrowser.mjs';
 import { ClassFeatureSelector } from './ClassFeatureSelector.mjs';
 import { SpellSelector } from './SpellSelector.mjs';
 import { EquipmentSelector } from './EquipmentSelector.mjs';
+import { SchoolChoiceResolver } from '../data/SchoolChoiceResolver.mjs';
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
@@ -36,6 +37,10 @@ class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 	#proficiencyResolver = new EquipmentProficiencyResolver();
 	/** @type {CompendiumBrowser} */
 	#compendiumBrowser = CompendiumBrowser.instance;
+	/** @type {SchoolChoiceResolver} */
+	#choiceResolver = new SchoolChoiceResolver();
+	/** @type {Map<string, Set<string>>} Transient UI state: key → selected schools (before confirm). */
+	#pendingSelections = new Map();
 
 	/** @type {ClassFeatureSelector|null} */
 	#featureSelector = null;
@@ -61,6 +66,9 @@ class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 			openSpells: SelectorPanel.#onOpenSpells,
 			openEquipment: SelectorPanel.#onOpenEquipment,
 			closePanel: SelectorPanel.#onClose,
+			selectSchoolChoice: SelectorPanel.#onSelectSchoolChoice,
+			confirmSchoolChoice: SelectorPanel.#onConfirmSchoolChoice,
+			editSchoolChoice: SelectorPanel.#onEditSchoolChoice,
 		},
 	};
 
@@ -90,6 +98,7 @@ class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 	/** @override */
 	async _prepareContext() {
 		const features = this.#prepareFeatures();
+		const schoolChoiceData = this.#prepareSchoolChoices();
 		const spellData = this.#prepareSpellSummary();
 		const equipmentData = this.#prepareEquipmentSummary();
 		const showFeaturesInPanel = game.settings.get(MODULE_ID, 'showFeaturesInPanel');
@@ -100,6 +109,7 @@ class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 			level: this.#level,
 			features,
 			showFeaturesInPanel,
+			...schoolChoiceData,
 			...spellData,
 			...equipmentData,
 		};
@@ -121,32 +131,35 @@ class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 
 	/**
 	 * Build spell summary data for the panel.
+	 * Uses resolved schools (granted + persisted choices) for accurate counts.
 	 * @returns {{ hasSpellcasting: boolean, spellSchools: Array<{id: string, label: string, icon: string}>, spellCount: number, maxTier: number }}
 	 */
 	#prepareSpellSummary() {
 		const hasSpellcasting = this.#schoolResolver.hasCasting(this.#classIdentifier, this.#subclassIdentifier);
-		const schoolAccess = this.#schoolResolver.resolve(
-			this.#classIdentifier,
-			this.#level,
-			this.#subclassIdentifier,
+		const resolvedSchools = this.#choiceResolver.resolveAllSchools(
+			this.#actor, this.#classIdentifier, this.#level, this.#subclassIdentifier,
 		);
 		const maxTier = this.#tierResolver.resolve(
 			this.#classIdentifier,
 			this.#level,
 			this.#subclassIdentifier,
 		);
+		const minTier = this.#tierResolver.resolveMin(
+			this.#classIdentifier,
+			this.#subclassIdentifier,
+		);
 
-		const hasUtility = schoolAccess.granted.includes('utility');
-		const realSchools = schoolAccess.granted.filter((s) => s !== 'utility');
+		const hasUtility = resolvedSchools.includes('utility');
+		const realSchools = resolvedSchools.filter((s) => s !== 'utility');
 
-		const spellSchools = schoolAccess.granted.map((s) => ({
+		const spellSchools = resolvedSchools.map((s) => ({
 			id: s,
 			label: capitalize(s),
 			icon: SCHOOL_ICONS[s] ?? 'fa-solid fa-sparkles',
 		}));
 
-		const spellCount = hasSpellcasting && maxTier >= 0
-			? this.#compendiumBrowser.countSpellsBySchoolAndTier(realSchools, maxTier, hasUtility, this.#classIdentifier)
+		const spellCount = hasSpellcasting && maxTier >= 0 && realSchools.length > 0
+			? this.#compendiumBrowser.countSpellsBySchoolAndTier(realSchools, maxTier, hasUtility, this.#classIdentifier, minTier)
 			: 0;
 
 		return { hasSpellcasting, spellSchools, spellCount, maxTier };
@@ -168,6 +181,44 @@ class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 				armor: proficiencies.armor.length ? proficiencies.armor.join(', ') : none,
 				weapons: proficiencies.weapons.length ? proficiencies.weapons.join(', ') : none,
 			},
+		};
+	}
+
+	/**
+	 * Build school choice data for the panel template.
+	 * @returns {{ hasSchoolChoices: boolean, pendingChoices: Array, confirmedChoices: Array, totalChoiceCount: number, schoolIcons: Record<string, string> }}
+	 */
+	#prepareSchoolChoices() {
+		const pendingChoices = this.#choiceResolver.getPendingChoices(
+			this.#actor, this.#classIdentifier, this.#level, this.#subclassIdentifier,
+		);
+		const confirmedChoices = this.#choiceResolver.getConfirmedChoices(
+			this.#actor, this.#classIdentifier, this.#level, this.#subclassIdentifier,
+		);
+
+		// Enrich each pending choice with selection state for the template
+		for (const choice of pendingChoices) {
+			const selections = this.#pendingSelections.get(choice.key);
+			choice.isReady = selections?.size === choice.count;
+			choice.label = game.i18n.format('NIMBLE_SELECTOR.schoolChoice.title', { count: choice.count });
+			choice.availableOptions = choice.availableOptions.map((s) => ({
+				id: s,
+				selected: selections?.has(s) ?? false,
+			}));
+		}
+
+		const totalChoiceCount = pendingChoices.reduce((sum, c) => sum + c.count, 0)
+			+ confirmedChoices.reduce((sum, c) => sum + c.count, 0);
+
+		const headerLabel = game.i18n.format('NIMBLE_SELECTOR.schoolChoice.title', { count: totalChoiceCount });
+
+		return {
+			hasSchoolChoices: pendingChoices.length > 0 || confirmedChoices.length > 0,
+			pendingChoices,
+			confirmedChoices,
+			totalChoiceCount,
+			headerLabel,
+			schoolIcons: SCHOOL_ICONS,
 		};
 	}
 
@@ -216,6 +267,75 @@ class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 		this.#spellSelector?.close();
 		this.#equipmentSelector?.close();
 		this.close();
+	}
+
+	/** @this {SelectorPanel} */
+	static #onSelectSchoolChoice(_event, target) {
+		const key = target.dataset.choiceKey;
+		const school = target.dataset.school;
+		if (!key || !school) return;
+
+		// Find the choice to know its count
+		const pending = this.#choiceResolver.getPendingChoices(
+			this.#actor, this.#classIdentifier, this.#level, this.#subclassIdentifier,
+		);
+		const choice = pending.find((c) => c.key === key);
+		if (!choice) return;
+
+		let selections = this.#pendingSelections.get(key);
+		if (!selections) {
+			selections = new Set();
+			this.#pendingSelections.set(key, selections);
+		}
+
+		if (selections.has(school)) {
+			selections.delete(school);
+		} else {
+			// If count is 1, replace; otherwise add up to count
+			if (choice.count === 1) {
+				selections.clear();
+			}
+			if (selections.size < choice.count) {
+				selections.add(school);
+			}
+		}
+
+		this.render();
+	}
+
+	/** @this {SelectorPanel} */
+	static async #onConfirmSchoolChoice(_event, target) {
+		const key = target.dataset.choiceKey;
+		if (!key) return;
+
+		const selections = this.#pendingSelections.get(key);
+		if (!selections?.size) return;
+
+		// Validate selection count matches the required count
+		const pending = this.#choiceResolver.getPendingChoices(
+			this.#actor, this.#classIdentifier, this.#level, this.#subclassIdentifier,
+		);
+		const choice = pending.find((c) => c.key === key);
+		if (!choice || selections.size !== choice.count) return;
+
+		await this.#choiceResolver.saveChoice(this.#actor, key, [...selections]);
+		this.#pendingSelections.delete(key);
+
+		// Close SpellSelector so it reloads with updated schools
+		this.#spellSelector?.close();
+		this.#spellSelector = null;
+
+		this.render();
+	}
+
+	/** @this {SelectorPanel} */
+	static async #onEditSchoolChoice(_event, target) {
+		const key = target.dataset.choiceKey;
+		if (!key) return;
+
+		await this.#choiceResolver.removeChoice(this.#actor, key);
+		this.#pendingSelections.delete(key);
+		this.render();
 	}
 }
 

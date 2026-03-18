@@ -31,6 +31,12 @@
 			"none": "None",
 			"level": "Level"
 		},
+		"schoolChoice": {
+			"title": "Choose {count} spell school(s)",
+			"confirm": "Confirm",
+			"edit": "Edit",
+			"confirmed": "Confirmed"
+		},
 		"features": {
 			"title": "Class Features",
 			"all": "All",

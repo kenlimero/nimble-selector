@@ -75,12 +75,7 @@
     "base": {},
     "subclasses": {
       "spellblade": {
-        "3": {
-          "choices": {
-            "count": 1,
-            "type": "any-school"
-          }
-        }
+        "3": ["fire", "ice", "lightning", "necrotic", "radiant", "wind"]
       }
     }
   }

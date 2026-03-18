@@ -381,18 +381,19 @@ class CompendiumBrowser {
 	}
 
 	/**
-	 * Find spells matching the given schools and max tier.
+	 * Find spells matching the given schools and tier range.
 	 * Utility spells are only included when includeUtility is true.
 	 * Class-exclusive spells are filtered out when they belong to a different class.
 	 * @param {string[]} schools - Spell school identifiers (real schools only, not "utility")
 	 * @param {number} maxTier - Maximum spell tier (inclusive)
 	 * @param {boolean} [includeUtility=false] - Whether to include utility-flagged spells
 	 * @param {string|null} [classIdentifier=null] - Current class (used to filter class-exclusive spells)
+	 * @param {number} [minTier=0] - Minimum spell tier (inclusive, use 1 to exclude cantrips)
 	 * @returns {SpellData[]}
 	 */
-	findSpellsBySchoolAndTier(schools, maxTier, includeUtility = false, classIdentifier = null) {
+	findSpellsBySchoolAndTier(schools, maxTier, includeUtility = false, classIdentifier = null, minTier = 0) {
 		const results = [];
-		for (const spell of this.#iterateMatchingSpells(schools, maxTier, includeUtility, classIdentifier)) {
+		for (const spell of this.#iterateMatchingSpells(schools, maxTier, includeUtility, classIdentifier, minTier)) {
 			results.push(spell);
 		}
 		results.sort((a, b) => a.tier - b.tier || a.name.localeCompare(b.name));
@@ -400,17 +401,18 @@ class CompendiumBrowser {
 	}
 
 	/**
-	 * Count spells matching the given schools and max tier (without allocating a results array).
+	 * Count spells matching the given schools and tier range (without allocating a results array).
 	 * Class-exclusive spells are filtered out when they belong to a different class.
 	 * @param {string[]} schools - Spell school identifiers (real schools only, not "utility")
 	 * @param {number} maxTier - Maximum spell tier (inclusive)
 	 * @param {boolean} [includeUtility=false] - Whether to include utility-flagged spells
 	 * @param {string|null} [classIdentifier=null] - Current class (used to filter class-exclusive spells)
+	 * @param {number} [minTier=0] - Minimum spell tier (inclusive, use 1 to exclude cantrips)
 	 * @returns {number}
 	 */
-	countSpellsBySchoolAndTier(schools, maxTier, includeUtility = false, classIdentifier = null) {
+	countSpellsBySchoolAndTier(schools, maxTier, includeUtility = false, classIdentifier = null, minTier = 0) {
 		let count = 0;
-		for (const _ of this.#iterateMatchingSpells(schools, maxTier, includeUtility, classIdentifier)) {
+		for (const _ of this.#iterateMatchingSpells(schools, maxTier, includeUtility, classIdentifier, minTier)) {
 			count++;
 		}
 		return count;
@@ -423,9 +425,10 @@ class CompendiumBrowser {
 	 * @param {number} maxTier - Maximum spell tier (inclusive)
 	 * @param {boolean} includeUtility - Whether to include utility-flagged spells
 	 * @param {string|null} classIdentifier - Current class (used to filter class-exclusive spells)
+	 * @param {number} minTier - Minimum spell tier (inclusive)
 	 * @yields {SpellData}
 	 */
-	*#iterateMatchingSpells(schools, maxTier, includeUtility, classIdentifier) {
+	*#iterateMatchingSpells(schools, maxTier, includeUtility, classIdentifier, minTier = 0) {
 		const hideSecret = game.settings.get(MODULE_ID, 'hideSecretSpells');
 		const dataProvider = DataProvider.instance;
 		const normalizedSchools = new Set(
@@ -436,7 +439,7 @@ class CompendiumBrowser {
 			if (hideSecret && spell.isSecret) continue;
 			if (spell.isUtility && !includeUtility) continue;
 			if (classIdentifier && dataProvider.isExcludedByClass(spell._normalizedName, classIdentifier)) continue;
-			if (normalizedSchools.has(spell._normalizedSchool) && spell.tier <= maxTier) {
+			if (normalizedSchools.has(spell._normalizedSchool) && spell.tier >= minTier && spell.tier <= maxTier) {
 				yield spell;
 			}
 		}

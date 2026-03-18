@@ -1,6 +1,7 @@
 import { MODULE_ID, TEMPLATE_PATH, SCHOOL_ICONS, capitalize, buildOwnedItemKeys, ScrollPositionMixin } from '../utils/constants.mjs';
 import { SpellSchoolResolver } from '../data/SpellSchoolResolver.mjs';
 import { SpellTierResolver } from '../data/SpellTierResolver.mjs';
+import { SchoolChoiceResolver } from '../data/SchoolChoiceResolver.mjs';
 import { CompendiumBrowser } from '../core/CompendiumBrowser.mjs';
 import { ItemGranter } from '../core/ItemGranter.mjs';
 
@@ -37,10 +38,14 @@ class SpellSelector extends ScrollPositionMixin(HandlebarsApplicationMixin(Appli
 	#grantedSchools = [];
 	/** @type {number} */
 	#maxTier = 0;
+	/** @type {number} */
+	#minTier = 0;
 	/** @type {SpellSchoolResolver} */
 	#schoolResolver = new SpellSchoolResolver();
 	/** @type {SpellTierResolver} */
 	#tierResolver = new SpellTierResolver();
+	/** @type {SchoolChoiceResolver} */
+	#choiceResolver = new SchoolChoiceResolver();
 	/** @type {CompendiumBrowser} */
 	#compendiumBrowser = CompendiumBrowser.instance;
 	/** @type {ItemGranter} */
@@ -94,7 +99,8 @@ class SpellSelector extends ScrollPositionMixin(HandlebarsApplicationMixin(Appli
 	#loadSpellData() {
 		if (this.#dataLoaded) return;
 
-		const schoolAccess = this.#schoolResolver.resolve(
+		const resolvedSchools = this.#choiceResolver.resolveAllSchools(
+			this.#actor,
 			this.#classIdentifier,
 			this.#level,
 			this.#subclassIdentifier,
@@ -104,8 +110,12 @@ class SpellSelector extends ScrollPositionMixin(HandlebarsApplicationMixin(Appli
 			this.#level,
 			this.#subclassIdentifier,
 		);
+		this.#minTier = this.#tierResolver.resolveMin(
+			this.#classIdentifier,
+			this.#subclassIdentifier,
+		);
 
-		this.#grantedSchools = schoolAccess.granted;
+		this.#grantedSchools = resolvedSchools;
 
 		// No spellcasting at this level — skip compendium query
 		if (this.#maxTier < 0 || this.#grantedSchools.length === 0) {
@@ -118,7 +128,7 @@ class SpellSelector extends ScrollPositionMixin(HandlebarsApplicationMixin(Appli
 		const hasUtility = this.#grantedSchools.includes('utility');
 		const realSchools = this.#grantedSchools.filter((s) => s !== 'utility');
 
-		this.#allSpells = this.#compendiumBrowser.findSpellsBySchoolAndTier(realSchools, this.#maxTier, hasUtility, this.#classIdentifier);
+		this.#allSpells = this.#compendiumBrowser.findSpellsBySchoolAndTier(realSchools, this.#maxTier, hasUtility, this.#classIdentifier, this.#minTier);
 		this.#spellsByUuid = new Map(this.#allSpells.map((s) => [s.uuid, s]));
 		this.#ownedSpellKeys = buildOwnedItemKeys(this.#actor, 'spell');
 		this.#dataLoaded = true;
@@ -153,12 +163,12 @@ class SpellSelector extends ScrollPositionMixin(HandlebarsApplicationMixin(Appli
 	}
 
 	/**
-	 * Build tier filter buttons from 0 (cantrips) to maxTier.
+	 * Build tier filter buttons from minTier to maxTier.
 	 * @returns {Array<{tier: number, label: string, active: boolean}>}
 	 */
 	#buildTierFilters() {
 		const tiers = [];
-		for (let t = 0; t <= this.#maxTier; t++) {
+		for (let t = this.#minTier; t <= this.#maxTier; t++) {
 			tiers.push({
 				tier: t,
 				label: SpellSelector.#getTierLabel(t),

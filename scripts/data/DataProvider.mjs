@@ -1,9 +1,19 @@
 import { DATA_PATH, LOG_PREFIX, normalizeString } from '../utils/constants.mjs';
 
 /**
+ * @typedef {object} SpellSchoolChoice
+ * @property {number} count - How many schools to choose
+ * @property {string} [type] - "school" or "any-school"
+ * @property {string[]} [options] - Specific schools to choose from
+ * @property {number} level - The level at which this choice is configured
+ * @property {'class'|'subclass'} source - Whether this comes from base class or subclass
+ * @property {string} sourceIdentifier - The class or subclass identifier
+ */
+
+/**
  * @typedef {object} SpellSchoolAccess
  * @property {string[]} granted - Schools automatically available
- * @property {Array<{count?: number, options?: string[]}>} choices - Schools the player must choose from
+ * @property {SpellSchoolChoice[]} choices - Schools the player must choose from
  */
 
 /**
@@ -130,13 +140,13 @@ class DataProvider {
 		this.#collectSchoolsUpToLevel(classData.base, level, granted);
 
 		// Top-level choices (e.g. Songweaver picks 1 school at level 1)
-		this.#collectChoicesUpToLevel(classData.choices, level, choices);
+		this.#collectChoicesUpToLevel(classData.choices, level, choices, 'class', classIdentifier);
 
 		// Accumulate subclass schools
 		if (subclassIdentifier) {
 			const subData = classData.subclasses?.[subclassIdentifier];
 			if (subData) {
-				this.#collectSubclassSchools(subData, level, granted, choices);
+				this.#collectSubclassSchools(subData, level, granted, choices, subclassIdentifier);
 			}
 		}
 
@@ -167,12 +177,19 @@ class DataProvider {
 	 * @param {object|undefined} choiceMap - e.g. { "1": { count: 1, options: [...] } }
 	 * @param {number} maxLevel
 	 * @param {Array} choices - Mutated: choice objects are pushed here
+	 * @param {'class'|'subclass'} source - Origin of the choice
+	 * @param {string} sourceIdentifier - Class or subclass identifier
 	 */
-	#collectChoicesUpToLevel(choiceMap, maxLevel, choices) {
+	#collectChoicesUpToLevel(choiceMap, maxLevel, choices, source, sourceIdentifier) {
 		if (!choiceMap) return;
 		for (const [lvl, choiceData] of Object.entries(choiceMap)) {
 			if (DataProvider.#isValidLevel(lvl, maxLevel)) {
-				choices.push(choiceData);
+				choices.push({
+					...choiceData,
+					level: Number(lvl),
+					source,
+					sourceIdentifier,
+				});
 			}
 		}
 	}
@@ -184,8 +201,9 @@ class DataProvider {
 	 * @param {number} maxLevel
 	 * @param {Set<string>} granted - Mutated
 	 * @param {Array} choices - Mutated
+	 * @param {string} subclassIdentifier - Subclass identifier for metadata
 	 */
-	#collectSubclassSchools(subData, maxLevel, granted, choices) {
+	#collectSubclassSchools(subData, maxLevel, granted, choices, subclassIdentifier) {
 		for (const [lvl, value] of Object.entries(subData)) {
 			if (!DataProvider.#isValidLevel(lvl, maxLevel)) continue;
 
@@ -196,7 +214,12 @@ class DataProvider {
 					}
 				}
 			} else if (value?.choices) {
-				choices.push(value.choices);
+				choices.push({
+					...value.choices,
+					level: Number(lvl),
+					source: 'subclass',
+					sourceIdentifier: subclassIdentifier,
+				});
 			}
 		}
 	}
@@ -232,6 +255,27 @@ class DataProvider {
 
 		if (!classData?.base) return -1;
 		return DataProvider.#findMaxTierAtLevel(classData.base, level);
+	}
+
+	/**
+	 * Get the minimum spell tier for a class (i.e. the lowest tier in its table).
+	 * Classes that start at tier 0 have cantrips; subclasses like Spellblade start at tier 1.
+	 * @param {string} classIdentifier
+	 * @param {string|null} [subclassIdentifier=null]
+	 * @returns {number} Min tier (0 = has cantrips, 1+ = no cantrips, -1 = no spellcasting)
+	 */
+	getMinSpellTier(classIdentifier, subclassIdentifier = null) {
+		const classData = this.#spellTiers?.[classIdentifier];
+
+		if (subclassIdentifier) {
+			const subTiers = classData?.subclasses?.[subclassIdentifier];
+			if (subTiers) {
+				return Math.min(...Object.values(subTiers));
+			}
+		}
+
+		if (!classData?.base) return -1;
+		return Math.min(...Object.values(classData.base));
 	}
 
 	/**

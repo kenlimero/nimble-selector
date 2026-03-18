@@ -182,6 +182,9 @@ function _registerActionHandler(SheetClass) {
 Hooks.once('init', () => {
 	console.log(`${LOG_PREFIX} Initializing Nimble Selector module`);
 
+	// ── Handlebars helpers ───────────────────
+	Handlebars.registerHelper('capitalize', (str) => str ? str.charAt(0).toUpperCase() + str.slice(1) : '');
+
 	// ── Settings ──────────────────────────────
 	game.settings.register(MODULE_ID, 'autoOpenOnLevelUp', {
 		name: 'NIMBLE_SELECTOR.settings.autoOpenOnLevelUp',
