@@ -1,4 +1,4 @@
-import { MODULE_ID, TEMPLATE_PATH, SCHOOL_ICONS, capitalize, buildOwnedItemKeys } from '../utils/constants.mjs';
+import { MODULE_ID, TEMPLATE_PATH, SCHOOL_ICONS, capitalize, buildOwnedItemKeys, ScrollPositionMixin } from '../utils/constants.mjs';
 import { SpellSchoolResolver } from '../data/SpellSchoolResolver.mjs';
 import { SpellTierResolver } from '../data/SpellTierResolver.mjs';
 import { CompendiumBrowser } from '../core/CompendiumBrowser.mjs';
@@ -10,7 +10,7 @@ const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
  * Application for selecting and granting spells to a character.
  * Filters spells by school and tier based on class/subclass access.
  */
-class SpellSelector extends HandlebarsApplicationMixin(ApplicationV2) {
+class SpellSelector extends ScrollPositionMixin(HandlebarsApplicationMixin(ApplicationV2)) {
 	/** @type {Actor} */
 	#actor;
 	/** @type {string} */
@@ -31,15 +31,19 @@ class SpellSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 	#activeSchool = '';
 	/** @type {number|null} Active tier filter (null = show all). */
 	#activeTier = null;
-	#scrollTop = 0;
+	/** @type {boolean} */
 	#dataLoaded = false;
 	/** @type {string[]} */
 	#grantedSchools = [];
 	/** @type {number} */
 	#maxTier = 0;
+	/** @type {SpellSchoolResolver} */
 	#schoolResolver = new SpellSchoolResolver();
+	/** @type {SpellTierResolver} */
 	#tierResolver = new SpellTierResolver();
+	/** @type {CompendiumBrowser} */
 	#compendiumBrowser = CompendiumBrowser.instance;
+	/** @type {ItemGranter} */
 	#granter = new ItemGranter();
 
 	static DEFAULT_OPTIONS = {
@@ -187,7 +191,7 @@ class SpellSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 	/**
 	 * Enrich a spell with display-specific properties (ownership, labels, selection state).
 	 * @param {import('../core/CompendiumBrowser.mjs').SpellData} spell
-	 * @returns {object}
+	 * @returns {import('../core/CompendiumBrowser.mjs').SpellData & {alreadyOwned: boolean, selected: boolean, schoolIcon: string, schoolLabel: string, tierLabel: string, tierClass: string}}
 	 */
 	#enrichSpellForDisplay(spell) {
 		const alreadyOwned =
@@ -217,20 +221,6 @@ class SpellSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		return `${game.i18n.localize('NIMBLE_SELECTOR.spells.tier')} ${tier}`;
 	}
 
-	/** @override */
-	_onRender(_context, _options) {
-		const scrollArea = this.element?.querySelector('.nimble-selector__scroll-area');
-		if (scrollArea) scrollArea.scrollTop = this.#scrollTop;
-	}
-
-	/**
-	 * Save current scroll position before re-render.
-	 */
-	#saveScrollPosition() {
-		const scrollArea = this.element?.querySelector('.nimble-selector__scroll-area');
-		if (scrollArea) this.#scrollTop = scrollArea.scrollTop;
-	}
-
 	/* ---------------------------------------- */
 	/*  Action Handlers                         */
 	/* ---------------------------------------- */
@@ -239,7 +229,7 @@ class SpellSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 	static #onFilterSchool(_event, target) {
 		const school = target.dataset.school;
 		this.#activeSchool = this.#activeSchool === school ? '' : school;
-		this.#saveScrollPosition();
+		this._saveScrollPosition();
 		this.render();
 	}
 
@@ -252,7 +242,7 @@ class SpellSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 			const parsed = Number(tier);
 			this.#activeTier = this.#activeTier === parsed ? null : parsed;
 		}
-		this.#saveScrollPosition();
+		this._saveScrollPosition();
 		this.render();
 	}
 
@@ -271,7 +261,7 @@ class SpellSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		} else {
 			this.#selectedUuids.add(uuid);
 		}
-		this.#saveScrollPosition();
+		this._saveScrollPosition();
 		this.render();
 	}
 

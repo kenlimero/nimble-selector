@@ -52,6 +52,7 @@ function _getDocumentId(li) {
 /**
  * Open the Nimble Selector panel for the currently controlled token
  * or the user's default character.
+ * @returns {void}
  */
 function _openForControlledToken() {
 	if (!orchestrator) {
@@ -104,6 +105,7 @@ function _findCharacterSheetClasses() {
  *
  * Wraps _getHeaderControls() to inject our control at render time,
  * with dedup to guarantee a single entry.
+ * @returns {void}
  */
 function _patchCharacterSheetControls() {
 	const sheetClasses = _findCharacterSheetClasses();
@@ -123,6 +125,7 @@ function _patchCharacterSheetControls() {
  * Wrap _getHeaderControls on the prototype that owns it to inject our button.
  * @param {Function} SheetClass
  * @param {Set} patched - Tracks already-patched prototypes to avoid duplicates
+ * @returns {void}
  */
 function _patchHeaderControls(SheetClass, patched) {
 	let owner = SheetClass.prototype;
@@ -150,6 +153,7 @@ function _patchHeaderControls(SheetClass, patched) {
 /**
  * Register the nimbleSelector action handler on the class that owns DEFAULT_OPTIONS.actions.
  * @param {Function} SheetClass
+ * @returns {void}
  */
 function _registerActionHandler(SheetClass) {
 	let target = SheetClass;

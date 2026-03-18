@@ -60,6 +60,7 @@ class CompendiumBrowser {
 	#spellIndex = new Map();
 	/** @type {Map<string, ItemData>} UUID-keyed item index. */
 	#itemIndex = new Map();
+	/** @type {boolean} */
 	#initialized = false;
 	/** @type {Promise<void>|null} */
 	#initPromise = null;
@@ -97,16 +98,21 @@ class CompendiumBrowser {
 
 	/**
 	 * Internal initialization — called only once.
+	 * Resets the cached promise on failure so future calls can retry.
 	 * @returns {Promise<void>}
 	 */
 	async #doInitialize() {
-		await Promise.all([
-			this.#indexFeatures(),
-			this.#indexSpells(),
-			this.#indexItems(),
-		]);
-
-		this.#initialized = true;
+		try {
+			await Promise.all([
+				this.#indexFeatures(),
+				this.#indexSpells(),
+				this.#indexItems(),
+			]);
+			this.#initialized = true;
+		} catch (err) {
+			this.#initPromise = null;
+			throw err;
+		}
 	}
 
 	/* ---------------------------------------- */
@@ -385,22 +391,10 @@ class CompendiumBrowser {
 	 * @returns {SpellData[]}
 	 */
 	findSpellsBySchoolAndTier(schools, maxTier, includeUtility = false, classIdentifier = null) {
-		const hideSecret = game.settings.get(MODULE_ID, 'hideSecretSpells');
-		const dataProvider = DataProvider.instance;
-		const normalizedSchools = new Set(
-			schools.filter((s) => s !== 'utility').map(normalizeString),
-		);
-
 		const results = [];
-		for (const spell of this.#spellIndex.values()) {
-			if (hideSecret && spell.isSecret) continue;
-			if (spell.isUtility && !includeUtility) continue;
-			if (classIdentifier && dataProvider.isExcludedByClass(spell._normalizedName, classIdentifier)) continue;
-			if (normalizedSchools.has(spell._normalizedSchool) && spell.tier <= maxTier) {
-				results.push(spell);
-			}
+		for (const spell of this.#iterateMatchingSpells(schools, maxTier, includeUtility, classIdentifier)) {
+			results.push(spell);
 		}
-
 		results.sort((a, b) => a.tier - b.tier || a.name.localeCompare(b.name));
 		return results;
 	}
@@ -415,23 +409,37 @@ class CompendiumBrowser {
 	 * @returns {number}
 	 */
 	countSpellsBySchoolAndTier(schools, maxTier, includeUtility = false, classIdentifier = null) {
+		let count = 0;
+		for (const _ of this.#iterateMatchingSpells(schools, maxTier, includeUtility, classIdentifier)) {
+			count++;
+		}
+		return count;
+	}
+
+	/**
+	 * Iterate over spells matching the given school/tier/utility/class filters.
+	 * Shared by both find and count methods to avoid duplicated filter logic.
+	 * @param {string[]} schools - Spell school identifiers (real schools only, not "utility")
+	 * @param {number} maxTier - Maximum spell tier (inclusive)
+	 * @param {boolean} includeUtility - Whether to include utility-flagged spells
+	 * @param {string|null} classIdentifier - Current class (used to filter class-exclusive spells)
+	 * @yields {SpellData}
+	 */
+	*#iterateMatchingSpells(schools, maxTier, includeUtility, classIdentifier) {
 		const hideSecret = game.settings.get(MODULE_ID, 'hideSecretSpells');
 		const dataProvider = DataProvider.instance;
 		const normalizedSchools = new Set(
 			schools.filter((s) => s !== 'utility').map(normalizeString),
 		);
-		let count = 0;
 
 		for (const spell of this.#spellIndex.values()) {
 			if (hideSecret && spell.isSecret) continue;
 			if (spell.isUtility && !includeUtility) continue;
 			if (classIdentifier && dataProvider.isExcludedByClass(spell._normalizedName, classIdentifier)) continue;
 			if (normalizedSchools.has(spell._normalizedSchool) && spell.tier <= maxTier) {
-				count++;
+				yield spell;
 			}
 		}
-
-		return count;
 	}
 
 	/**

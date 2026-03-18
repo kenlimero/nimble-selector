@@ -19,6 +19,7 @@ import { buildOwnedItemKeys, slugToLabel, normalizeString } from '../utils/const
  * level and subclass metadata).
  */
 class ClassFeatureResolver {
+	/** @type {CompendiumBrowser} */
 	#compendiumBrowser;
 
 	constructor() {
@@ -34,6 +35,8 @@ class ClassFeatureResolver {
 	 * @returns {ResolvedFeature[]}
 	 */
 	resolveRange(classIdentifier, fromLevel, toLevel, subclassIdentifier = null) {
+		if (!classIdentifier || fromLevel > toLevel) return [];
+
 		const { progression, selectableGroups } = this.#compendiumBrowser.getClassFeatures(
 			classIdentifier,
 			fromLevel,

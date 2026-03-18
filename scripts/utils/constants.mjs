@@ -94,3 +94,39 @@ export function pushToMapArray(map, key, value) {
 		map.set(key, [value]);
 	}
 }
+
+/** @type {string} CSS selector for the scrollable area used by all selector apps. */
+const SCROLL_AREA_SELECTOR = '.nimble-selector__scroll-area';
+
+/**
+ * Mixin that adds scroll position save/restore to an ApplicationV2 subclass.
+ * Prevents scroll jumping when the app re-renders.
+ *
+ * Usage: class MyApp extends ScrollPositionMixin(HandlebarsApplicationMixin(ApplicationV2)) { ... }
+ *
+ * @template {new (...args: any[]) => any} T
+ * @param {T} Base - The base ApplicationV2 class to extend
+ * @returns {T} Extended class with scroll position management
+ */
+export function ScrollPositionMixin(Base) {
+	return class extends Base {
+		/** @type {number} */
+		_scrollTop = 0;
+
+		/**
+		 * Save the current scroll position of the scroll area.
+		 * Call this before triggering a re-render.
+		 */
+		_saveScrollPosition() {
+			const scrollArea = this.element?.querySelector(SCROLL_AREA_SELECTOR);
+			if (scrollArea) this._scrollTop = scrollArea.scrollTop;
+		}
+
+		/** @override */
+		_onRender(_context, _options) {
+			super._onRender?.(_context, _options);
+			const scrollArea = this.element?.querySelector(SCROLL_AREA_SELECTOR);
+			if (scrollArea) scrollArea.scrollTop = this._scrollTop;
+		}
+	};
+}

@@ -26,10 +26,15 @@ class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 	/** @type {number} */
 	#fromLevel;
 
+	/** @type {ClassFeatureResolver} */
 	#featureResolver = new ClassFeatureResolver();
+	/** @type {SpellSchoolResolver} */
 	#schoolResolver = new SpellSchoolResolver();
+	/** @type {SpellTierResolver} */
 	#tierResolver = new SpellTierResolver();
+	/** @type {EquipmentProficiencyResolver} */
 	#proficiencyResolver = new EquipmentProficiencyResolver();
+	/** @type {CompendiumBrowser} */
 	#compendiumBrowser = CompendiumBrowser.instance;
 
 	/** @type {ClassFeatureSelector|null} */
@@ -116,7 +121,7 @@ class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 
 	/**
 	 * Build spell summary data for the panel.
-	 * @returns {object}
+	 * @returns {{ hasSpellcasting: boolean, spellSchools: Array<{id: string, label: string, icon: string}>, spellCount: number, maxTier: number }}
 	 */
 	#prepareSpellSummary() {
 		const hasSpellcasting = this.#schoolResolver.hasCasting(this.#classIdentifier, this.#subclassIdentifier);
@@ -149,7 +154,7 @@ class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 
 	/**
 	 * Build equipment summary data for the panel.
-	 * @returns {object}
+	 * @returns {{ equipmentCount: number, proficiencySummary: {armor: string, weapons: string} }}
 	 */
 	#prepareEquipmentSummary() {
 		const proficiencies = this.#proficiencyResolver.resolve(this.#classIdentifier);

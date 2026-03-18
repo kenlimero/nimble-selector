@@ -1,4 +1,4 @@
-import { MODULE_ID, TEMPLATE_PATH, capitalize, pushToMapArray } from '../utils/constants.mjs';
+import { MODULE_ID, TEMPLATE_PATH, capitalize, pushToMapArray, ScrollPositionMixin } from '../utils/constants.mjs';
 import { ClassFeatureResolver } from '../data/ClassFeatureResolver.mjs';
 import { ItemGranter } from '../core/ItemGranter.mjs';
 
@@ -9,7 +9,7 @@ const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
  * Shows progression features organized by level, followed by selectable
  * group sections listed once (not duplicated per level).
  */
-class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
+class ClassFeatureSelector extends ScrollPositionMixin(HandlebarsApplicationMixin(ApplicationV2)) {
 	/** @type {Actor} */
 	#actor;
 	/** @type {string} */
@@ -24,11 +24,13 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 	#features = [];
 	/** @type {Set<string>} */
 	#selectedUuids = new Set();
+	/** @type {boolean} */
 	#initialSelectionDone = false;
-	#scrollTop = 0;
 	/** @type {string} Active selectable group filter (empty = show all). */
 	#activeGroup = '';
+	/** @type {ClassFeatureResolver} */
 	#resolver = new ClassFeatureResolver();
+	/** @type {ItemGranter} */
 	#granter = new ItemGranter();
 
 	static DEFAULT_OPTIONS = {
@@ -176,20 +178,6 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		return { levelGroups, filteredGroupSections: selectableGroupSections };
 	}
 
-	/** @override */
-	_onRender(_context, _options) {
-		const scrollArea = this.element?.querySelector('.nimble-selector__scroll-area');
-		if (scrollArea) scrollArea.scrollTop = this.#scrollTop;
-	}
-
-	/**
-	 * Save current scroll position before re-render.
-	 */
-	#saveScrollPosition() {
-		const scrollArea = this.element?.querySelector('.nimble-selector__scroll-area');
-		if (scrollArea) this.#scrollTop = scrollArea.scrollTop;
-	}
-
 	/* ---------------------------------------- */
 	/*  Action Handlers                         */
 	/* ---------------------------------------- */
@@ -198,7 +186,7 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 	static #onFilterGroup(_event, target) {
 		const group = target.dataset.group;
 		this.#activeGroup = this.#activeGroup === group ? '' : group;
-		this.#saveScrollPosition();
+		this._saveScrollPosition();
 		this.render();
 	}
 
@@ -215,7 +203,7 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		} else {
 			this.#selectedUuids.add(uuid);
 		}
-		this.#saveScrollPosition();
+		this._saveScrollPosition();
 		this.render();
 	}
 
@@ -225,14 +213,14 @@ class ClassFeatureSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 			if (f.alreadyOwned || !f.matched || !f.uuid) continue;
 			this.#selectedUuids.add(f.uuid);
 		}
-		this.#saveScrollPosition();
+		this._saveScrollPosition();
 		this.render();
 	}
 
 	/** @this {ClassFeatureSelector} */
 	static #onDeselectAll() {
 		this.#selectedUuids.clear();
-		this.#saveScrollPosition();
+		this._saveScrollPosition();
 		this.render();
 	}
 

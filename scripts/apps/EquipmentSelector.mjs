@@ -1,4 +1,4 @@
-import { MODULE_ID, TEMPLATE_PATH, LOG_PREFIX, capitalize } from '../utils/constants.mjs';
+import { MODULE_ID, TEMPLATE_PATH, LOG_PREFIX, capitalize, ScrollPositionMixin } from '../utils/constants.mjs';
 import { EquipmentProficiencyResolver } from '../data/EquipmentProficiencyResolver.mjs';
 import { ItemGranter } from '../core/ItemGranter.mjs';
 
@@ -21,7 +21,7 @@ const DENOMINATION_TO_CP = { gp: 100, sp: 10, cp: 1 };
  * Filters equipment by category (weapons, armor, shields, etc.)
  * based on class proficiencies.
  */
-class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
+class EquipmentSelector extends ScrollPositionMixin(HandlebarsApplicationMixin(ApplicationV2)) {
 	/** @type {Actor} */
 	#actor;
 	/** @type {string} */
@@ -36,11 +36,17 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 	#selectedQuantities = new Map();
 	/** @type {string} Active category tab filter (empty = show all). */
 	#activeCategory = '';
+	/** @type {boolean} Whether to filter equipment to only class-proficient items. */
 	#showOnlyProficient = true;
+	/** @type {boolean} Whether to deduct currency from the actor on confirm. */
 	#payTheBill = false;
-	#scrollTop = 0;
+	/** @type {boolean} */
 	#dataLoaded = false;
+	/** @type {boolean} Whether the contextmenu listener has been attached. */
+	#contextMenuBound = false;
+	/** @type {EquipmentProficiencyResolver} */
 	#proficiencyResolver = new EquipmentProficiencyResolver();
+	/** @type {ItemGranter} */
 	#granter = new ItemGranter();
 
 	static DEFAULT_OPTIONS = {
@@ -143,31 +149,22 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 	}
 
 	/**
-	 * Calculate total price in CP for all selected items.
-	 * @returns {number}
+	 * Compute the total cost of selected items, both as a per-denomination
+	 * breakdown and as a single copper-piece total.
+	 * @returns {{ byDenom: {gp: number, sp: number, cp: number}, totalCp: number }}
 	 */
-	#getSelectionTotalCp() {
-		let total = 0;
-		for (const [uuid, qty] of this.#selectedQuantities) {
-			const item = this.#equipmentByUuid.get(uuid);
-			if (item) total += this.#getItemPriceInCp(item) * qty;
-		}
-		return total;
-	}
-
-	/**
-	 * Aggregate selected items' prices by denomination.
-	 * @returns {{gp: number, sp: number, cp: number}}
-	 */
-	#getSelectionTotalByDenom() {
-		const totals = { gp: 0, sp: 0, cp: 0 };
+	#getSelectionCost() {
+		const byDenom = { gp: 0, sp: 0, cp: 0 };
+		let totalCp = 0;
 		for (const [uuid, qty] of this.#selectedQuantities) {
 			const item = this.#equipmentByUuid.get(uuid);
 			if (!item) continue;
 			const denom = item.priceDenomination ?? 'gp';
-			totals[denom] = (totals[denom] ?? 0) + (item.priceValue ?? 0) * qty;
+			const lineTotal = (item.priceValue ?? 0) * qty;
+			byDenom[denom] = (byDenom[denom] ?? 0) + lineTotal;
+			totalCp += lineTotal * (DENOMINATION_TO_CP[denom] ?? DENOMINATION_TO_CP.gp);
 		}
-		return totals;
+		return { byDenom, totalCp };
 	}
 
 	/* ---------------------------------------- */
@@ -207,8 +204,7 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 
 		let selectedCount = 0;
 		for (const qty of this.#selectedQuantities.values()) selectedCount += qty;
-		const selectionTotalCp = this.#getSelectionTotalCp();
-		const selectionTotal = this.#getSelectionTotalByDenom();
+		const { byDenom: selectionTotal, totalCp: selectionTotalCp } = this.#getSelectionCost();
 		const canAfford = selectionTotalCp <= wealthCp;
 
 		return {
@@ -233,7 +229,7 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 	 * Enrich an equipment item with display-specific properties.
 	 * @param {import('../core/CompendiumBrowser.mjs').ItemData} item
 	 * @param {number} wealthCp - Actor's wealth in CP (0 if payTheBill disabled)
-	 * @returns {object}
+	 * @returns {import('../core/CompendiumBrowser.mjs').ItemData & {selected: boolean, quantity: number, typeLabel: string, priceLabel: string, tooExpensive: boolean}}
 	 */
 	#enrichEquipmentForDisplay(item, wealthCp) {
 		const quantity = this.#selectedQuantities.get(item.uuid) ?? 0;
@@ -249,20 +245,17 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 
 	/** @override */
 	_onRender(_context, _options) {
-		const scrollArea = this.element?.querySelector('.nimble-selector__scroll-area');
-		if (scrollArea) scrollArea.scrollTop = this.#scrollTop;
+		super._onRender(_context, _options);
 
-		// Right-click to decrease quantity
-		const cardGrid = this.element?.querySelector('.nimble-selector__card-grid');
-		cardGrid?.addEventListener('contextmenu', (event) => this.#onRemoveEquipment(event));
-	}
-
-	/**
-	 * Save current scroll position before re-render.
-	 */
-	#saveScrollPosition() {
-		const scrollArea = this.element?.querySelector('.nimble-selector__scroll-area');
-		if (scrollArea) this.#scrollTop = scrollArea.scrollTop;
+		// Attach right-click listener once via event delegation on the app element
+		if (!this.#contextMenuBound && this.element) {
+			this.element.addEventListener('contextmenu', (event) => {
+				if (event.target.closest('.nimble-selector__card-grid [data-uuid]')) {
+					this.#onRemoveEquipment(event);
+				}
+			});
+			this.#contextMenuBound = true;
+		}
 	}
 
 	/* ---------------------------------------- */
@@ -316,7 +309,7 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 	static #onFilterCategory(_event, target) {
 		const category = target.dataset.category;
 		this.#activeCategory = this.#activeCategory === category ? '' : category;
-		this.#saveScrollPosition();
+		this._saveScrollPosition();
 		this.render();
 	}
 
@@ -327,7 +320,7 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 
 		const current = this.#selectedQuantities.get(uuid) ?? 0;
 		this.#selectedQuantities.set(uuid, current + 1);
-		this.#saveScrollPosition();
+		this._saveScrollPosition();
 		this.render();
 	}
 
@@ -347,21 +340,21 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		} else {
 			this.#selectedQuantities.set(uuid, current - 1);
 		}
-		this.#saveScrollPosition();
+		this._saveScrollPosition();
 		this.render();
 	}
 
 	/** @this {EquipmentSelector} */
 	static #onToggleProficiencyFilter() {
 		this.#showOnlyProficient = !this.#showOnlyProficient;
-		this.#saveScrollPosition();
+		this._saveScrollPosition();
 		this.render();
 	}
 
 	/** @this {EquipmentSelector} */
 	static #onTogglePayTheBill() {
 		this.#payTheBill = !this.#payTheBill;
-		this.#saveScrollPosition();
+		this._saveScrollPosition();
 		this.render();
 	}
 
@@ -372,13 +365,17 @@ class EquipmentSelector extends HandlebarsApplicationMixin(ApplicationV2) {
 		const quantities = new Map(this.#selectedQuantities);
 
 		if (this.#payTheBill) {
-			if (this.#getSelectionTotalCp() > this.#getActorWealthInCp()) {
+			const { byDenom, totalCp } = this.#getSelectionCost();
+			if (totalCp > this.#getActorWealthInCp()) {
 				ui.notifications.warn(game.i18n.localize('NIMBLE_SELECTOR.equipment.cannotAfford'));
 				return;
 			}
 
+			// Deduct currency first to avoid granting free items on deduction failure
+			const deducted = await this.#deductCurrency(byDenom);
+			if (!deducted) return;
+
 			await this.#granter.grantItemsByUuid(this.#actor, quantities);
-			await this.#deductCurrency(this.#getSelectionTotalByDenom());
 		} else {
 			await this.#granter.grantItemsByUuid(this.#actor, quantities);
 		}

@@ -17,7 +17,9 @@ import { EquipmentSelector } from '../apps/EquipmentSelector.mjs';
  * Acts as the main entry point for module interactions.
  */
 class SelectorOrchestrator {
+	/** @type {DataProvider} */
 	#dataProvider;
+	/** @type {CompendiumBrowser} */
 	#compendiumBrowser;
 
 	constructor() {
@@ -152,7 +154,9 @@ class SelectorOrchestrator {
 	 * @returns {string}
 	 */
 	static #getIdentifier(item) {
-		return item.identifier ?? item.name?.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-') ?? '';
+		if (item.identifier) return item.identifier;
+		const name = item.name ?? '';
+		return name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
 	}
 }
 

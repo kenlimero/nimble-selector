@@ -13,6 +13,7 @@ const STACKABLE_SIZE_TYPES = new Set(['stackable', 'smallSized']);
  * the existing item's quantity is incremented instead of creating a duplicate.
  */
 class ItemGranter {
+	/** @type {CompendiumBrowser} */
 	#compendiumBrowser;
 
 	constructor() {

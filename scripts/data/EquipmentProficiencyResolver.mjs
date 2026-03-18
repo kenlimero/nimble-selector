@@ -12,7 +12,9 @@ import { CompendiumBrowser } from '../core/CompendiumBrowser.mjs';
  * class proficiencies.
  */
 class EquipmentProficiencyResolver {
+	/** @type {DataProvider} */
 	#dataProvider;
+	/** @type {CompendiumBrowser} */
 	#compendiumBrowser;
 	/** @type {Map<string, Set<string>>|null} Lazily built weapon category index. */
 	#weaponCategoryIndex = null;
@@ -87,6 +89,7 @@ class EquipmentProficiencyResolver {
 	 * @returns {boolean}
 	 */
 	#matchesWeaponProficiency(item, weaponTags) {
+		if (!weaponTags?.length) return false;
 		for (const tag of weaponTags) {
 			switch (tag) {
 				case 'all-martial':

@@ -1,4 +1,4 @@
-import { DATA_PATH, LOG_PREFIX } from '../utils/constants.mjs';
+import { DATA_PATH, LOG_PREFIX, normalizeString } from '../utils/constants.mjs';
 
 /**
  * @typedef {object} SpellSchoolAccess
@@ -24,6 +24,7 @@ class DataProvider {
 	#secretSpellNames = new Set();
 	/** @type {Map<string, string>} Normalized spell name → exclusive class identifier. */
 	#classExclusiveSpells = new Map();
+	/** @type {boolean} */
 	#loaded = false;
 	/** @type {Promise<void>|null} */
 	#loadPromise = null;
@@ -60,30 +61,36 @@ class DataProvider {
 
 	/**
 	 * Internal load implementation — called only once.
+	 * Resets the cached promise on failure so future calls can retry.
 	 * @returns {Promise<void>}
 	 */
 	async #doLoad() {
-		const [spellSchools, spellTiers, equipmentProficiencies, secretSpells, classExclusiveSpells] = await Promise.all([
-			this.#fetchJSON('spell-schools.json'),
-			this.#fetchJSON('spell-tiers.json'),
-			this.#fetchJSON('equipment-proficiencies.json'),
-			this.#fetchJSON('secret-spells.json'),
-			this.#fetchJSON('class-exclusive-spells.json'),
-		]);
+		try {
+			const [spellSchools, spellTiers, equipmentProficiencies, secretSpells, classExclusiveSpells] = await Promise.all([
+				this.#fetchJSON('spell-schools.json'),
+				this.#fetchJSON('spell-tiers.json'),
+				this.#fetchJSON('equipment-proficiencies.json'),
+				this.#fetchJSON('secret-spells.json'),
+				this.#fetchJSON('class-exclusive-spells.json'),
+			]);
 
-		this.#spellSchools = spellSchools;
-		this.#spellTiers = spellTiers;
-		this.#equipmentProficiencies = equipmentProficiencies;
-		this.#secretSpellNames = new Set(
-			(Array.isArray(secretSpells) ? secretSpells : []).map((n) => n.toLowerCase().trim().replace(/['']/g, "'")),
-		);
-		this.#classExclusiveSpells = new Map(
-			Object.entries(classExclusiveSpells ?? {}).map(([name, cls]) => [
-				name.toLowerCase().trim().replace(/['']/g, "'"),
-				cls.toLowerCase().trim(),
-			]),
-		);
-		this.#loaded = true;
+			this.#spellSchools = spellSchools;
+			this.#spellTiers = spellTiers;
+			this.#equipmentProficiencies = equipmentProficiencies;
+			this.#secretSpellNames = new Set(
+				(Array.isArray(secretSpells) ? secretSpells : []).map(normalizeString),
+			);
+			this.#classExclusiveSpells = new Map(
+				Object.entries(classExclusiveSpells ?? {}).map(([name, cls]) => [
+					normalizeString(name),
+					normalizeString(cls),
+				]),
+			);
+			this.#loaded = true;
+		} catch (err) {
+			this.#loadPromise = null;
+			throw err;
+		}
 	}
 
 	/**
@@ -164,7 +171,7 @@ class DataProvider {
 	#collectChoicesUpToLevel(choiceMap, maxLevel, choices) {
 		if (!choiceMap) return;
 		for (const [lvl, choiceData] of Object.entries(choiceMap)) {
-			if (Number(lvl) <= maxLevel) {
+			if (DataProvider.#isValidLevel(lvl, maxLevel)) {
 				choices.push(choiceData);
 			}
 		}
@@ -261,7 +268,7 @@ class DataProvider {
 	isExcludedByClass(normalizedSpellName, classIdentifier) {
 		const exclusiveClass = this.#classExclusiveSpells.get(normalizedSpellName);
 		if (!exclusiveClass) return false;
-		return exclusiveClass !== classIdentifier.toLowerCase().trim();
+		return exclusiveClass !== normalizeString(classIdentifier);
 	}
 
 	/**
