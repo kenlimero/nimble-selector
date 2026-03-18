@@ -63,7 +63,14 @@ Berserker, The Cheat, Commander, Hunter, Mage, Oathsworn, Shadowmancer, Shepherd
 
 ### Installation
 
-#### From Foundry
+#### From Foundry (recommended)
+
+1. Open the **Add-on Modules** tab in the Foundry setup screen
+2. Click **Install Module**
+3. Search for **Nimble Selector** in the search bar
+4. Click **Install**
+
+#### From manifest URL
 
 1. Open the **Add-on Modules** tab in the Foundry setup screen
 2. Click **Install Module**
@@ -156,7 +163,14 @@ Berserker, The Cheat, Commander, Hunter, Mage, Oathsworn, Shadowmancer, Shepherd
 
 ### Installation
 
-#### Depuis Foundry
+#### Depuis Foundry (recommande)
+
+1. Ouvrir l'onglet **Add-on Modules** dans l'ecran de configuration de Foundry
+2. Cliquer sur **Install Module**
+3. Rechercher **Nimble Selector** dans la barre de recherche
+4. Cliquer sur **Install**
+
+#### Via l'URL du manifeste
 
 1. Ouvrir l'onglet **Add-on Modules** dans l'ecran de configuration de Foundry
 2. Cliquer sur **Install Module**
