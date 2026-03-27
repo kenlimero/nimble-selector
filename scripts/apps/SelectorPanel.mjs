@@ -8,6 +8,7 @@ import { ClassFeatureSelector } from './ClassFeatureSelector.mjs';
 import { SpellSelector } from './SpellSelector.mjs';
 import { EquipmentSelector } from './EquipmentSelector.mjs';
 import { SchoolChoiceResolver } from '../data/SchoolChoiceResolver.mjs';
+import { AutoGranter } from '../core/AutoGranter.mjs';
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
@@ -39,6 +40,8 @@ class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 	#compendiumBrowser = CompendiumBrowser.instance;
 	/** @type {SchoolChoiceResolver} */
 	#choiceResolver = new SchoolChoiceResolver();
+	/** @type {AutoGranter} */
+	#autoGranter = new AutoGranter();
 	/**
 	 * Transient UI state: choice key → selected schools (before confirm).
 	 * @type {Map<string, Set<string>>}
@@ -319,6 +322,20 @@ class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 		// Close SpellSelector so it reloads with updated schools
 		this.#spellSelector?.close();
 		this.#spellSelector = null;
+
+		// If auto-grant is active and all school choices are now resolved, grant spells and close panel
+		if (this.#autoGranter.shouldAutoGrant(this.#actor)) {
+			const remainingChoices = this.#choiceResolver.getPendingChoices(
+				this.#actor, this.#classIdentifier, this.#level, this.#subclassIdentifier,
+			);
+			if (remainingChoices.length === 0) {
+				await this.#autoGranter.grantSpellsAfterChoice(
+					this.#actor, this.#classIdentifier, this.#level, this.#subclassIdentifier,
+				);
+				await this.close();
+				return;
+			}
+		}
 
 		this.render();
 	}

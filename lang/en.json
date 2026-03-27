@@ -12,7 +12,11 @@
 			"showFeaturesInPanel": "Show Features in Panel",
 			"showFeaturesInPanelHint": "Display the list of class features directly in the main selector panel.",
 			"hideSecretSpells": "Hide Secret Spells",
-			"hideSecretSpellsHint": "Hide secret spells from the spell selector. Only the GM can toggle this setting."
+			"hideSecretSpellsHint": "Hide secret spells from the spell selector. Only the GM can toggle this setting.",
+			"autoGrantEnabled": "Auto-Grant on Level Up",
+			"autoGrantEnabledHint": "Automatically grant features and spells without opening the selector. Can be overridden per actor via the right-click menu.",
+			"autoGrantOn": "Disable Auto-Grant",
+			"autoGrantOff": "Enable Auto-Grant"
 		},
 		"panel": {
 			"title": "Nimble Selector",
@@ -87,6 +91,13 @@
 			"noClass": "This character has no class assigned.",
 			"loading": "Nimble Selector is still loading...",
 			"selectToken": "Select a character token or set a default character first."
+		},
+		"autoGrant": {
+			"grantedFeatures": "{count} feature(s)",
+			"grantedSpells": "{count} spell(s)",
+			"noneGranted": "nothing",
+			"summary": "{name} — {items} auto-granted.",
+			"warning": "{name} — {granted} auto-granted. {pendingCount} choice(s) required — open the selector manually."
 		}
 	}
 }

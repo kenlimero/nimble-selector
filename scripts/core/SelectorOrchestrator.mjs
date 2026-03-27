@@ -4,6 +4,8 @@ import { SelectorPanel } from '../apps/SelectorPanel.mjs';
 import { ClassFeatureSelector } from '../apps/ClassFeatureSelector.mjs';
 import { SpellSelector } from '../apps/SpellSelector.mjs';
 import { EquipmentSelector } from '../apps/EquipmentSelector.mjs';
+import { AutoGranter } from './AutoGranter.mjs';
+import { AutoGrantNotifier } from './AutoGrantNotifier.mjs';
 
 /**
  * @typedef {object} ActorClassInfo
@@ -21,10 +23,16 @@ class SelectorOrchestrator {
 	#dataProvider;
 	/** @type {CompendiumBrowser} */
 	#compendiumBrowser;
+	/** @type {AutoGranter} */
+	#autoGranter;
+	/** @type {AutoGrantNotifier} */
+	#autoGrantNotifier;
 
 	constructor() {
 		this.#dataProvider = DataProvider.instance;
 		this.#compendiumBrowser = CompendiumBrowser.instance;
+		this.#autoGranter = new AutoGranter();
+		this.#autoGrantNotifier = new AutoGrantNotifier();
 	}
 
 	/**
@@ -92,6 +100,66 @@ class SelectorOrchestrator {
 		if (!info) return;
 
 		new SelectorPanel(actor, info.classIdentifier, toLevel, fromLevel, info.subclassIdentifier)
+			.render(true);
+	}
+
+	/**
+	 * Called from the updateItem hook on level-up.
+	 * If auto-grant is enabled for the actor, grants items silently and notifies.
+	 * Otherwise falls back to opening the selector panel.
+	 * @param {Actor} actor
+	 * @param {number} fromLevel
+	 * @param {number} toLevel
+	 * @returns {Promise<void>}
+	 */
+	async handleLevelUp(actor, fromLevel, toLevel) {
+		const info = await this.#requireClassInfo(actor);
+		if (!info) return;
+
+		if (this.#autoGranter.shouldAutoGrant(actor)) {
+			const result = await this.#autoGranter.execute(
+				actor, info.classIdentifier, fromLevel, toLevel, info.subclassIdentifier,
+			);
+			this.#autoGrantNotifier.notify(actor, result.granted, result.pending);
+
+			const hasPending = result.pending.selectableGroups.length > 0 || result.pending.schoolChoices.length > 0;
+			if (hasPending) {
+				new SelectorPanel(actor, info.classIdentifier, toLevel, fromLevel, info.subclassIdentifier)
+					.render(true);
+			}
+			return;
+		}
+
+		new SelectorPanel(actor, info.classIdentifier, toLevel, fromLevel, info.subclassIdentifier)
+			.render(true);
+	}
+
+	/**
+	 * Called from the createItem hook when a class is added to a character.
+	 * If auto-grant is enabled, grants items silently.
+	 * Otherwise falls back to opening the selector panel.
+	 * @param {Actor} actor
+	 * @returns {Promise<void>}
+	 */
+	async handleClassCreation(actor) {
+		const info = await this.#requireClassInfo(actor);
+		if (!info) return;
+
+		if (this.#autoGranter.shouldAutoGrant(actor)) {
+			const result = await this.#autoGranter.execute(
+				actor, info.classIdentifier, 1, info.level, info.subclassIdentifier,
+			);
+			this.#autoGrantNotifier.notify(actor, result.granted, result.pending);
+
+			const hasPending = result.pending.selectableGroups.length > 0 || result.pending.schoolChoices.length > 0;
+			if (hasPending) {
+				new SelectorPanel(actor, info.classIdentifier, info.level, 1, info.subclassIdentifier)
+					.render(true);
+			}
+			return;
+		}
+
+		new SelectorPanel(actor, info.classIdentifier, info.level, 1, info.subclassIdentifier)
 			.render(true);
 	}
 

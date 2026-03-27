@@ -222,6 +222,15 @@ Hooks.once('init', () => {
 		default: true,
 	});
 
+	game.settings.register(MODULE_ID, 'autoGrantEnabled', {
+		name: 'NIMBLE_SELECTOR.settings.autoGrantEnabled',
+		hint: 'NIMBLE_SELECTOR.settings.autoGrantEnabledHint',
+		scope: 'world',
+		config: true,
+		type: Boolean,
+		default: true,
+	});
+
 	// ── Keybinding (Shift+L) ─────────────────
 	game.keybindings.register(MODULE_ID, 'openSelector', {
 		name: 'NIMBLE_SELECTOR.keybindings.openSelector',
@@ -246,6 +255,18 @@ Hooks.once('ready', async () => {
 		await CompendiumBrowser.instance.initialize();
 
 		orchestrator = new SelectorOrchestrator();
+
+		// Socket listener: display auto-grant notifications forwarded to GM
+		game.socket.on(`module.${MODULE_ID}`, (data) => {
+			if (data.type !== 'autoGrantNotification') return;
+			if (!game.user.isGM) return;
+			if (data.senderId === game.userId) return; // Already shown locally
+			if (data.isWarning) {
+				ui.notifications.warn(data.message);
+			} else {
+				ui.notifications.info(data.message);
+			}
+		});
 
 		// Expose the orchestrator globally for macro / API usage
 		game.modules.get(MODULE_ID).api = {
@@ -300,8 +321,7 @@ Hooks.on('updateItem', (item, changes, _options, userId) => {
 	const newLevel = changes.system.classLevel;
 	if (newLevel < 2) return;
 
-	console.log(`${LOG_PREFIX} Level-up detected: ${actor.name} ${newLevel - 1} → ${newLevel}`);
-	orchestrator.openForLevelUp(actor, newLevel, newLevel);
+	orchestrator.handleLevelUp(actor, newLevel, newLevel);
 });
 
 /* ---------------------------------------- */
@@ -318,12 +338,10 @@ Hooks.on('createItem', (item, _options, userId) => {
 	const actor = item.parent;
 	if (!actor || actor.type !== 'character') return;
 
-	console.log(`${LOG_PREFIX} Class added: ${item.name} on ${actor.name}`);
-
 	// Delay to allow the system to finish its own item-creation logic
 	// (HP, classData, etc.) before we open the panel.
 	setTimeout(() => {
-		orchestrator.openForActor(actor);
+		orchestrator.handleClassCreation(actor);
 	}, CLASS_CREATION_DELAY);
 });
 
@@ -344,6 +362,40 @@ Hooks.on('getActorDirectoryEntryContext', (_html, contextOptions) => {
 			if (actor && orchestrator) {
 				orchestrator.openForActor(actor);
 			}
+		},
+	});
+
+	// Enable auto-grant (shown when auto-grant is currently off for this actor)
+	contextOptions.push({
+		name: game.i18n.localize('NIMBLE_SELECTOR.settings.autoGrantOff'),
+		icon: '<i class="fa-solid fa-bolt"></i>',
+		condition: (li) => {
+			const actor = game.actors.get(_getDocumentId(li));
+			if (!actor || actor.type !== 'character') return false;
+			const flag = actor.getFlag(MODULE_ID, 'autoGrant');
+			const effective = flag !== undefined ? flag : game.settings.get(MODULE_ID, 'autoGrantEnabled');
+			return !effective;
+		},
+		callback: async (li) => {
+			const actor = game.actors.get(_getDocumentId(li));
+			if (actor) await actor.setFlag(MODULE_ID, 'autoGrant', true);
+		},
+	});
+
+	// Disable auto-grant (shown when auto-grant is currently on for this actor)
+	contextOptions.push({
+		name: game.i18n.localize('NIMBLE_SELECTOR.settings.autoGrantOn'),
+		icon: '<i class="fa-solid fa-bolt-slash"></i>',
+		condition: (li) => {
+			const actor = game.actors.get(_getDocumentId(li));
+			if (!actor || actor.type !== 'character') return false;
+			const flag = actor.getFlag(MODULE_ID, 'autoGrant');
+			const effective = flag !== undefined ? flag : game.settings.get(MODULE_ID, 'autoGrantEnabled');
+			return effective;
+		},
+		callback: async (li) => {
+			const actor = game.actors.get(_getDocumentId(li));
+			if (actor) await actor.setFlag(MODULE_ID, 'autoGrant', false);
 		},
 	});
 });
