@@ -131,7 +131,7 @@ function _patchHeaderControls(SheetClass, patched) {
 			const globalSetting = game.settings.get(MODULE_ID, 'autoGrantEnabled');
 			const isEnabled = actorFlag !== undefined ? Boolean(actorFlag) : globalSetting;
 			controls.push({
-				icon: isEnabled ? 'fa-solid fa-bolt' : 'fa-solid fa-bolt-slash',
+				icon: isEnabled ? 'fa-solid fa-bolt-slash' : 'fa-solid fa-bolt',
 				label: isEnabled
 					? game.i18n.localize('NIMBLE_SELECTOR.settings.autoGrantOn')
 					: game.i18n.localize('NIMBLE_SELECTOR.settings.autoGrantOff'),
