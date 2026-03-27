@@ -12,11 +12,10 @@ import { SelectorOrchestrator } from './core/SelectorOrchestrator.mjs';
  * - updateItem: detect level-up (classLevel change)
  * - createItem: detect character creation (class added)
  * - getSceneControlButtons: add button to token controls bar
- * - getActorDirectoryEntryContext: right-click menu on actor directory
  *
  * Note: The Nimble system uses SvelteApplicationMixin(ActorSheetV2).
  * We patch _getHeaderControls() on character sheet classes to add
- * our button as a native window header control.
+ * our buttons as native window header controls (Nimble Selector + auto-grant toggle).
  */
 
 /** @type {SelectorOrchestrator|null} */
@@ -28,26 +27,6 @@ const CLASS_CREATION_DELAY = 500;
 /* ---------------------------------------- */
 /*  Helpers                                 */
 /* ---------------------------------------- */
-
-/**
- * Extract a document ID from a context-menu <li> element.
- * FoundryVTT v13 ApplicationV2 sidebars may use data-entry-id
- * instead of the legacy data-document-id.
- * @param {HTMLElement|jQuery} li
- * @returns {string|undefined}
- */
-function _getDocumentId(li) {
-	if (li instanceof HTMLElement) {
-		return (
-			li.dataset.entryId ??
-			li.dataset.documentId ??
-			li.closest?.('[data-entry-id]')?.dataset.entryId ??
-			li.closest?.('[data-document-id]')?.dataset.documentId
-		);
-	}
-	// jQuery-wrapped element fallback
-	return li.data?.('entryId') ?? li.data?.('documentId');
-}
 
 /**
  * Open the Nimble Selector panel for the currently controlled token
@@ -146,6 +125,20 @@ function _patchHeaderControls(SheetClass, patched) {
 				ownership: 'OWNER',
 			});
 		}
+		if (!controls.some((c) => c.action === 'nimbleSelectorToggleAutoGrant')) {
+			const actor = this.document;
+			const actorFlag = actor?.getFlag(MODULE_ID, 'autoGrant');
+			const globalSetting = game.settings.get(MODULE_ID, 'autoGrantEnabled');
+			const isEnabled = actorFlag !== undefined ? Boolean(actorFlag) : globalSetting;
+			controls.push({
+				icon: isEnabled ? 'fa-solid fa-bolt' : 'fa-solid fa-bolt-slash',
+				label: isEnabled
+					? game.i18n.localize('NIMBLE_SELECTOR.settings.autoGrantOn')
+					: game.i18n.localize('NIMBLE_SELECTOR.settings.autoGrantOff'),
+				action: 'nimbleSelectorToggleAutoGrant',
+				ownership: 'OWNER',
+			});
+		}
 		return controls;
 	};
 }
@@ -166,6 +159,16 @@ function _registerActionHandler(SheetClass) {
 						return;
 					}
 					orchestrator.openForActor(this.document);
+				};
+			}
+			if (!target.DEFAULT_OPTIONS.actions.nimbleSelectorToggleAutoGrant) {
+				target.DEFAULT_OPTIONS.actions.nimbleSelectorToggleAutoGrant = async function () {
+					const actor = this.document;
+					const actorFlag = actor.getFlag(MODULE_ID, 'autoGrant');
+					const globalSetting = game.settings.get(MODULE_ID, 'autoGrantEnabled');
+					const current = actorFlag !== undefined ? Boolean(actorFlag) : globalSetting;
+					await actor.setFlag(MODULE_ID, 'autoGrant', !current);
+					this.render();
 				};
 			}
 			return;
@@ -345,57 +348,3 @@ Hooks.on('createItem', (item, _options, userId) => {
 	}, CLASS_CREATION_DELAY);
 });
 
-/* ---------------------------------------- */
-/*  Context Menu on Actor Directory         */
-/* ---------------------------------------- */
-
-Hooks.on('getActorDirectoryEntryContext', (_html, contextOptions) => {
-	contextOptions.push({
-		name: 'Nimble Selector',
-		icon: '<i class="fa-solid fa-arrow-up-right-dots"></i>',
-		condition: (li) => {
-			const actor = game.actors.get(_getDocumentId(li));
-			return actor?.type === 'character';
-		},
-		callback: (li) => {
-			const actor = game.actors.get(_getDocumentId(li));
-			if (actor && orchestrator) {
-				orchestrator.openForActor(actor);
-			}
-		},
-	});
-
-	// Enable auto-grant (shown when auto-grant is currently off for this actor)
-	contextOptions.push({
-		name: game.i18n.localize('NIMBLE_SELECTOR.settings.autoGrantOff'),
-		icon: '<i class="fa-solid fa-bolt"></i>',
-		condition: (li) => {
-			const actor = game.actors.get(_getDocumentId(li));
-			if (!actor || actor.type !== 'character') return false;
-			const flag = actor.getFlag(MODULE_ID, 'autoGrant');
-			const effective = flag !== undefined ? flag : game.settings.get(MODULE_ID, 'autoGrantEnabled');
-			return !effective;
-		},
-		callback: async (li) => {
-			const actor = game.actors.get(_getDocumentId(li));
-			if (actor) await actor.setFlag(MODULE_ID, 'autoGrant', true);
-		},
-	});
-
-	// Disable auto-grant (shown when auto-grant is currently on for this actor)
-	contextOptions.push({
-		name: game.i18n.localize('NIMBLE_SELECTOR.settings.autoGrantOn'),
-		icon: '<i class="fa-solid fa-bolt-slash"></i>',
-		condition: (li) => {
-			const actor = game.actors.get(_getDocumentId(li));
-			if (!actor || actor.type !== 'character') return false;
-			const flag = actor.getFlag(MODULE_ID, 'autoGrant');
-			const effective = flag !== undefined ? flag : game.settings.get(MODULE_ID, 'autoGrantEnabled');
-			return effective;
-		},
-		callback: async (li) => {
-			const actor = game.actors.get(_getDocumentId(li));
-			if (actor) await actor.setFlag(MODULE_ID, 'autoGrant', false);
-		},
-	});
-});
