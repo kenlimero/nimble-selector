@@ -238,7 +238,11 @@ class SpellSelector extends ScrollPositionMixin(HandlebarsApplicationMixin(Appli
 	/*  Action Handlers                         */
 	/* ---------------------------------------- */
 
-	/** @this {SpellSelector} */
+	/**
+	 * @this {SpellSelector}
+	 * @param {PointerEvent} _event
+	 * @param {HTMLElement} target
+	 */
 	static #onFilterSchool(_event, target) {
 		const school = target.dataset.school;
 		this.#activeSchool = this.#activeSchool === school ? '' : school;
@@ -246,7 +250,11 @@ class SpellSelector extends ScrollPositionMixin(HandlebarsApplicationMixin(Appli
 		this.render();
 	}
 
-	/** @this {SpellSelector} */
+	/**
+	 * @this {SpellSelector}
+	 * @param {PointerEvent} _event
+	 * @param {HTMLElement} target
+	 */
 	static #onFilterTier(_event, target) {
 		const tier = target.dataset.tier;
 		if (tier === '') {
@@ -259,7 +267,11 @@ class SpellSelector extends ScrollPositionMixin(HandlebarsApplicationMixin(Appli
 		this.render();
 	}
 
-	/** @this {SpellSelector} */
+	/**
+	 * @this {SpellSelector}
+	 * @param {PointerEvent} _event
+	 * @param {HTMLElement} target
+	 */
 	static #onToggleSpell(_event, target) {
 		const uuid = target.dataset.uuid;
 		if (!uuid) return;

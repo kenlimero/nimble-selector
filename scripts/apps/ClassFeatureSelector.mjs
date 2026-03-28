@@ -182,7 +182,11 @@ class ClassFeatureSelector extends ScrollPositionMixin(HandlebarsApplicationMixi
 	/*  Action Handlers                         */
 	/* ---------------------------------------- */
 
-	/** @this {ClassFeatureSelector} */
+	/**
+	 * @this {ClassFeatureSelector}
+	 * @param {PointerEvent} _event
+	 * @param {HTMLElement} target
+	 */
 	static #onFilterGroup(_event, target) {
 		const group = target.dataset.group;
 		this.#activeGroup = this.#activeGroup === group ? '' : group;
@@ -190,7 +194,11 @@ class ClassFeatureSelector extends ScrollPositionMixin(HandlebarsApplicationMixi
 		this.render();
 	}
 
-	/** @this {ClassFeatureSelector} */
+	/**
+	 * @this {ClassFeatureSelector}
+	 * @param {PointerEvent} _event
+	 * @param {HTMLElement} target
+	 */
 	static #onToggleFeature(_event, target) {
 		const uuid = target.dataset.uuid;
 		if (!uuid) return;

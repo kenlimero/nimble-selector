@@ -273,7 +273,11 @@ class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 		this.close();
 	}
 
-	/** @this {SelectorPanel} */
+	/**
+	 * @this {SelectorPanel}
+	 * @param {PointerEvent} _event
+	 * @param {HTMLElement} target
+	 */
 	static #onSelectSchoolChoice(_event, target) {
 		const { choiceKey: key, school } = target.dataset;
 		if (!key || !school) return;
@@ -297,7 +301,11 @@ class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 		this.render();
 	}
 
-	/** @this {SelectorPanel} */
+	/**
+	 * @this {SelectorPanel}
+	 * @param {PointerEvent} _event
+	 * @param {HTMLElement} target
+	 */
 	static async #onConfirmSchoolChoice(_event, target) {
 		const key = target.dataset.choiceKey;
 		if (!key) return;
@@ -337,7 +345,11 @@ class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 		this.render();
 	}
 
-	/** @this {SelectorPanel} */
+	/**
+	 * @this {SelectorPanel}
+	 * @param {PointerEvent} _event
+	 * @param {HTMLElement} target
+	 */
 	static async #onEditSchoolChoice(_event, target) {
 		const key = target.dataset.choiceKey;
 		if (!key) return;

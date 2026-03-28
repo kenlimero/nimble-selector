@@ -306,7 +306,11 @@ class EquipmentSelector extends ScrollPositionMixin(HandlebarsApplicationMixin(A
 	/*  Action Handlers                         */
 	/* ---------------------------------------- */
 
-	/** @this {EquipmentSelector} */
+	/**
+	 * @this {EquipmentSelector}
+	 * @param {PointerEvent} _event
+	 * @param {HTMLElement} target
+	 */
 	static #onFilterCategory(_event, target) {
 		const category = target.dataset.category;
 		this.#activeCategory = this.#activeCategory === category ? '' : category;
@@ -314,7 +318,11 @@ class EquipmentSelector extends ScrollPositionMixin(HandlebarsApplicationMixin(A
 		this.render();
 	}
 
-	/** @this {EquipmentSelector} */
+	/**
+	 * @this {EquipmentSelector}
+	 * @param {PointerEvent} _event
+	 * @param {HTMLElement} target
+	 */
 	static #onAddEquipment(_event, target) {
 		const uuid = target.dataset.uuid;
 		if (!uuid) return;
