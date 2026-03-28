@@ -276,9 +276,13 @@ Hooks.once('ready', async () => {
 
 		// Socket listener: display auto-grant notifications forwarded to GM
 		game.socket.on(`module.${MODULE_ID}`, (data) => {
-			if (data.type !== 'autoGrantNotification') return;
+			if (!data || data.type !== 'autoGrantNotification') return;
 			if (!game.user.isGM) return;
 			if (data.senderId === game.userId) return; // Already shown locally
+			if (typeof data.message !== 'string' || typeof data.isWarning !== 'boolean') {
+				console.warn(`${LOG_PREFIX} Received malformed socket payload:`, data);
+				return;
+			}
 			if (data.isWarning) {
 				ui.notifications.warn(data.message);
 			} else {

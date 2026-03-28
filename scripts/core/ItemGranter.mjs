@@ -29,6 +29,11 @@ class ItemGranter {
 	 * @returns {Promise<Item[]>} The created embedded items (does not include stacked ones)
 	 */
 	async grantItemsByUuid(actor, uuidsOrQuantities) {
+		if (!actor || typeof actor.createEmbeddedDocuments !== 'function') {
+			console.error(`${LOG_PREFIX} grantItemsByUuid called with invalid actor:`, actor);
+			return [];
+		}
+
 		/** @type {Map<string, number>} */
 		const quantities = uuidsOrQuantities instanceof Map
 			? uuidsOrQuantities

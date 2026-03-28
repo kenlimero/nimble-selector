@@ -67,6 +67,10 @@ class SchoolChoiceResolver {
 			console.warn(`${LOG_PREFIX} saveChoice called with invalid arguments:`, { key, schools });
 			return;
 		}
+		const invalidSchools = schools.filter((s) => !CORE_SCHOOLS.includes(s));
+		if (invalidSchools.length > 0) {
+			console.warn(`${LOG_PREFIX} saveChoice called with unknown schools:`, invalidSchools);
+		}
 		await actor.setFlag(MODULE_ID, `schoolChoices.${key}`, schools);
 	}
 
