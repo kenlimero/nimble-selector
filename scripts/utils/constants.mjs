@@ -38,14 +38,28 @@ export function capitalize(str) {
 	return str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
 }
 
+/** @type {Map<string, string>} Cache for normalizeString results. */
+const _normalizeCache = new Map();
+
+/** @type {number} Maximum cache size before reset. */
+const _NORMALIZE_CACHE_MAX = 500;
+
 /**
  * Normalize a string for case-insensitive, whitespace-trimmed comparison.
  * Also normalizes fancy quotes to straight apostrophes.
+ * Results are cached (up to 500 entries) for repeated lookups.
  * @param {string} str
  * @returns {string}
  */
 export function normalizeString(str) {
-	return String(str ?? '').toLowerCase().trim().replace(/['']/g, "'");
+	const input = String(str ?? '');
+	const cached = _normalizeCache.get(input);
+	if (cached !== undefined) return cached;
+
+	const result = input.toLowerCase().trim().replace(/['']/g, "'");
+	if (_normalizeCache.size >= _NORMALIZE_CACHE_MAX) _normalizeCache.clear();
+	_normalizeCache.set(input, result);
+	return result;
 }
 
 /**
@@ -94,6 +108,30 @@ export function pushToMapArray(map, key, value) {
 		map.set(key, [value]);
 	}
 }
+
+/**
+ * Check if an auto-grant result has any pending choices.
+ * @param {{ selectableGroups: string[], schoolChoices: any[] }} pending
+ * @returns {boolean}
+ */
+export function hasPendingChoices(pending) {
+	return pending.selectableGroups.length > 0 || pending.schoolChoices.length > 0;
+}
+
+/**
+ * @typedef {object} SocketNotificationPayload
+ * @property {'autoGrantNotification'} type
+ * @property {string} actorId
+ * @property {string} message
+ * @property {boolean} isWarning
+ * @property {string} senderId
+ */
+
+/**
+ * @typedef {object} PendingResult
+ * @property {string[]} selectableGroups
+ * @property {import('../data/SchoolChoiceResolver.mjs').PendingChoice[]} schoolChoices
+ */
 
 /** @type {string} CSS selector for the scrollable area used by all selector apps. */
 const SCROLL_AREA_SELECTOR = '.nimble-selector__scroll-area';
