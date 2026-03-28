@@ -179,6 +179,10 @@ function _registerActionHandler(SheetClass) {
 						);
 						btn.dataset.tooltip = newLabel;
 						btn.setAttribute('aria-label', newLabel);
+						btn.title = newLabel;
+						// Update visible text label if present (span, label, or direct text node)
+						const textEl = btn.querySelector('span, label');
+						if (textEl) textEl.textContent = newLabel;
 					}
 				};
 			}
