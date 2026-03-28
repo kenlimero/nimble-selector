@@ -1,4 +1,4 @@
-import { MODULE_ID } from '../utils/constants.mjs';
+import { MODULE_ID, hasPendingChoices } from '../utils/constants.mjs';
 
 /**
  * Builds and dispatches auto-grant toast notifications.
@@ -10,10 +10,10 @@ class AutoGrantNotifier {
 	 * Show the appropriate toast for the actor owner and broadcast to GM.
 	 * @param {Actor} actor
 	 * @param {{ features: string[], spells: string[] }} granted
-	 * @param {{ selectableGroups: string[], schoolChoices: any[] }} pending
+	 * @param {import('../utils/constants.mjs').PendingResult} pending
 	 */
 	notify(actor, granted, pending) {
-		const hasPending = pending.selectableGroups.length > 0 || pending.schoolChoices.length > 0;
+		const hasPending = hasPendingChoices(pending);
 		const totalGranted = granted.features.length + granted.spells.length;
 
 		if (totalGranted === 0 && !hasPending) return;
@@ -29,12 +29,11 @@ class AutoGrantNotifier {
 	}
 
 	/**
-	 * Build a summary message when all items were auto-granted.
-	 * @param {Actor} actor
+	 * Build localized parts describing what was granted.
 	 * @param {{ features: string[], spells: string[] }} granted
-	 * @returns {string|null}
+	 * @returns {string[]}
 	 */
-	#buildSummary(actor, granted) {
+	#buildGrantedParts(granted) {
 		const parts = [];
 		if (granted.features.length > 0) {
 			parts.push(game.i18n.format('NIMBLE_SELECTOR.autoGrant.grantedFeatures', { count: granted.features.length }));
@@ -42,6 +41,17 @@ class AutoGrantNotifier {
 		if (granted.spells.length > 0) {
 			parts.push(game.i18n.format('NIMBLE_SELECTOR.autoGrant.grantedSpells', { count: granted.spells.length }));
 		}
+		return parts;
+	}
+
+	/**
+	 * Build a summary message when all items were auto-granted.
+	 * @param {Actor} actor
+	 * @param {{ features: string[], spells: string[] }} granted
+	 * @returns {string|null}
+	 */
+	#buildSummary(actor, granted) {
+		const parts = this.#buildGrantedParts(granted);
 		if (parts.length === 0) return null;
 		return game.i18n.format('NIMBLE_SELECTOR.autoGrant.summary', {
 			name: actor.name,
@@ -53,21 +63,15 @@ class AutoGrantNotifier {
 	 * Build a warning message when some choices are still required.
 	 * @param {Actor} actor
 	 * @param {{ features: string[], spells: string[] }} granted
-	 * @param {{ selectableGroups: string[], schoolChoices: any[] }} pending
+	 * @param {import('../utils/constants.mjs').PendingResult} pending
 	 * @returns {string}
 	 */
 	#buildWarning(actor, granted, pending) {
-		const grantedParts = [];
-		if (granted.features.length > 0) {
-			grantedParts.push(game.i18n.format('NIMBLE_SELECTOR.autoGrant.grantedFeatures', { count: granted.features.length }));
-		}
-		if (granted.spells.length > 0) {
-			grantedParts.push(game.i18n.format('NIMBLE_SELECTOR.autoGrant.grantedSpells', { count: granted.spells.length }));
-		}
+		const parts = this.#buildGrantedParts(granted);
 		const pendingCount = pending.selectableGroups.length + pending.schoolChoices.length;
 		return game.i18n.format('NIMBLE_SELECTOR.autoGrant.warning', {
 			name: actor.name,
-			granted: grantedParts.join(', ') || game.i18n.localize('NIMBLE_SELECTOR.autoGrant.noneGranted'),
+			granted: parts.join(', ') || game.i18n.localize('NIMBLE_SELECTOR.autoGrant.noneGranted'),
 			pendingCount,
 		});
 	}
