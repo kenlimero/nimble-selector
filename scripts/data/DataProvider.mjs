@@ -154,6 +154,18 @@ class DataProvider {
 	}
 
 	/**
+	 * Check if a class (with optional subclass) has any spellcasting ability.
+	 * Tests against level 20 to capture all possible unlocks.
+	 * @param {string} classIdentifier
+	 * @param {string|null} [subclassIdentifier=null]
+	 * @returns {boolean}
+	 */
+	hasCasting(classIdentifier, subclassIdentifier = null) {
+		const schools = this.getSpellSchools(classIdentifier, 20, subclassIdentifier);
+		return schools.granted.length > 0 || schools.choices.length > 0;
+	}
+
+	/**
 	 * Collect granted schools from a level-keyed map up to the given level.
 	 * @param {object|undefined} levelMap - e.g. { "1": ["+fire"], "5": ["+ice"] }
 	 * @param {number} maxLevel
@@ -196,11 +208,12 @@ class DataProvider {
 
 	/**
 	 * Collect schools and choices from subclass data up to the given level.
-	 * Subclass entries can be either an array of schools or a choice object.
+	 * Subclass entries can be either an array of school strings or an object
+	 * with a `choices` property for player-driven selection.
 	 * @param {object} subData - Subclass level-keyed map
 	 * @param {number} maxLevel
 	 * @param {Set<string>} granted - Mutated
-	 * @param {Array} choices - Mutated
+	 * @param {Array<SpellSchoolChoice>} choices - Mutated
 	 * @param {string} subclassIdentifier - Subclass identifier for metadata
 	 */
 	#collectSubclassSchools(subData, maxLevel, granted, choices, subclassIdentifier) {
@@ -290,18 +303,33 @@ class DataProvider {
 
 	/**
 	 * Find the highest tier available at or below the given level.
+	 * Uses a sorted array for efficient reverse scan.
 	 * @param {object} tierMap - e.g. { "1": 0, "3": 1, "5": 2 }
 	 * @param {number} level
 	 * @returns {number}
 	 */
 	static #findMaxTierAtLevel(tierMap, level) {
 		let maxTier = -1;
-		for (const [lvl, tier] of Object.entries(tierMap)) {
-			if (Number(lvl) <= level) {
-				maxTier = Math.max(maxTier, tier);
-			}
+		for (const [lvl, tier] of DataProvider.#toSortedPairs(tierMap)) {
+			if (lvl > level) break;
+			if (tier > maxTier) maxTier = tier;
 		}
 		return maxTier;
+	}
+
+	/**
+	 * Convert a tier map to a sorted array of [level, tier] pairs.
+	 * Caches the result on the object for repeated lookups.
+	 * @param {Record<string, number>} tierMap
+	 * @returns {Array<[number, number]>}
+	 */
+	static #toSortedPairs(tierMap) {
+		if (tierMap._sortedPairs) return tierMap._sortedPairs;
+		const pairs = Object.entries(tierMap)
+			.map(([lvl, tier]) => [Number(lvl), tier])
+			.sort(([a], [b]) => a - b);
+		tierMap._sortedPairs = pairs;
+		return pairs;
 	}
 
 	/**
