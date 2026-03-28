@@ -18,6 +18,8 @@ class EquipmentProficiencyResolver {
 	#compendiumBrowser;
 	/** @type {Map<string, Set<string>>|null} Lazily built weapon category index. */
 	#weaponCategoryIndex = null;
+	/** @type {Map<string, import('../core/CompendiumBrowser.mjs').ItemData[]>} Cached equipment lists by class. */
+	#equipmentCache = new Map();
 
 	constructor() {
 		this.#dataProvider = DataProvider.instance;
@@ -36,10 +38,14 @@ class EquipmentProficiencyResolver {
 	/**
 	 * Find all equipment items from the compendium that match the class proficiencies.
 	 * Always includes consumables and misc items regardless of class.
+	 * Results are cached per class identifier for the session lifetime.
 	 * @param {string} classIdentifier
 	 * @returns {import('../core/CompendiumBrowser.mjs').ItemData[]}
 	 */
 	findAvailableEquipment(classIdentifier) {
+		const cached = this.#equipmentCache.get(classIdentifier);
+		if (cached) return cached;
+
 		const proficiencies = this.resolve(classIdentifier);
 		const objectTypes = new Set(['consumable', 'misc']);
 
@@ -49,7 +55,9 @@ class EquipmentProficiencyResolver {
 		}
 		if (proficiencies.weapons.length > 0) objectTypes.add('weapon');
 
-		return this.#compendiumBrowser.findEquipmentByType([...objectTypes]);
+		const result = this.#compendiumBrowser.findEquipmentByType([...objectTypes]);
+		this.#equipmentCache.set(classIdentifier, result);
+		return result;
 	}
 
 	/**

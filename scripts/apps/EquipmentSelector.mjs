@@ -273,18 +273,18 @@ class EquipmentSelector extends ScrollPositionMixin(HandlebarsApplicationMixin(A
 		const wallet = this.#getActorWealth();
 
 		// Deduct GP — shortfall cascades to SP
-		let gpDeduct = Math.min(costs.gp, wallet.gp);
-		let gpShortfall = costs.gp - gpDeduct;
+		const gpDeduct = Math.min(costs.gp, wallet.gp);
+		const gpShortfall = costs.gp - gpDeduct;
 		wallet.gp -= gpDeduct;
 
 		// Convert GP shortfall to SP and add to SP cost
-		let spNeeded = costs.sp + gpShortfall * 10;
-		let spDeduct = Math.min(spNeeded, wallet.sp);
-		let spShortfall = spNeeded - spDeduct;
+		const spNeeded = costs.sp + gpShortfall * 10;
+		const spDeduct = Math.min(spNeeded, wallet.sp);
+		const spShortfall = spNeeded - spDeduct;
 		wallet.sp -= spDeduct;
 
 		// Convert SP shortfall to CP and add to CP cost
-		let cpNeeded = costs.cp + spShortfall * 10;
+		const cpNeeded = costs.cp + spShortfall * 10;
 		if (cpNeeded > wallet.cp) return false;
 		wallet.cp -= cpNeeded;
 
@@ -297,6 +297,7 @@ class EquipmentSelector extends ScrollPositionMixin(HandlebarsApplicationMixin(A
 			return true;
 		} catch (err) {
 			console.error(`${LOG_PREFIX} Failed to deduct currency from ${this.#actor.name}:`, err);
+			ui.notifications.error(game.i18n.localize('NIMBLE_SELECTOR.equipment.deductionFailed') || 'Failed to deduct currency. Please try again.');
 			return false;
 		}
 	}
@@ -371,14 +372,11 @@ class EquipmentSelector extends ScrollPositionMixin(HandlebarsApplicationMixin(A
 				return;
 			}
 
-			// Deduct currency first to avoid granting free items on deduction failure
 			const deducted = await this.#deductCurrency(byDenom);
 			if (!deducted) return;
-
-			await this.#granter.grantItemsByUuid(this.#actor, quantities);
-		} else {
-			await this.#granter.grantItemsByUuid(this.#actor, quantities);
 		}
+
+		await this.#granter.grantItemsByUuid(this.#actor, quantities);
 
 		let totalCount = 0;
 		for (const qty of quantities.values()) totalCount += qty;
