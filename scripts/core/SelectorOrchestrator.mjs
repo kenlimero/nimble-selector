@@ -1,3 +1,4 @@
+import { hasPendingChoices } from '../utils/constants.mjs';
 import { DataProvider } from '../data/DataProvider.mjs';
 import { CompendiumBrowser } from './CompendiumBrowser.mjs';
 import { SelectorPanel } from '../apps/SelectorPanel.mjs';
@@ -113,25 +114,7 @@ class SelectorOrchestrator {
 	 * @returns {Promise<void>}
 	 */
 	async handleLevelUp(actor, fromLevel, toLevel) {
-		const info = await this.#requireClassInfo(actor);
-		if (!info) return;
-
-		if (this.#autoGranter.shouldAutoGrant(actor)) {
-			const result = await this.#autoGranter.execute(
-				actor, info.classIdentifier, fromLevel, toLevel, info.subclassIdentifier,
-			);
-			this.#autoGrantNotifier.notify(actor, result.granted, result.pending);
-
-			const hasPending = result.pending.selectableGroups.length > 0 || result.pending.schoolChoices.length > 0;
-			if (hasPending) {
-				new SelectorPanel(actor, info.classIdentifier, toLevel, fromLevel, info.subclassIdentifier)
-					.render(true);
-			}
-			return;
-		}
-
-		new SelectorPanel(actor, info.classIdentifier, toLevel, fromLevel, info.subclassIdentifier)
-			.render(true);
+		await this.#autoGrantOrOpen(actor, fromLevel, toLevel);
 	}
 
 	/**
@@ -144,22 +127,31 @@ class SelectorOrchestrator {
 	async handleClassCreation(actor) {
 		const info = await this.#requireClassInfo(actor);
 		if (!info) return;
+		await this.#autoGrantOrOpen(actor, 1, info.level);
+	}
+
+	/**
+	 * Attempt auto-grant for the level range; open the panel if auto-grant
+	 * is disabled or if user choices remain pending.
+	 * @param {Actor} actor
+	 * @param {number} fromLevel
+	 * @param {number} toLevel
+	 * @returns {Promise<void>}
+	 */
+	async #autoGrantOrOpen(actor, fromLevel, toLevel) {
+		const info = await this.#requireClassInfo(actor);
+		if (!info) return;
 
 		if (this.#autoGranter.shouldAutoGrant(actor)) {
 			const result = await this.#autoGranter.execute(
-				actor, info.classIdentifier, 1, info.level, info.subclassIdentifier,
+				actor, info.classIdentifier, fromLevel, toLevel, info.subclassIdentifier,
 			);
 			this.#autoGrantNotifier.notify(actor, result.granted, result.pending);
 
-			const hasPending = result.pending.selectableGroups.length > 0 || result.pending.schoolChoices.length > 0;
-			if (hasPending) {
-				new SelectorPanel(actor, info.classIdentifier, info.level, 1, info.subclassIdentifier)
-					.render(true);
-			}
-			return;
+			if (!hasPendingChoices(result.pending)) return;
 		}
 
-		new SelectorPanel(actor, info.classIdentifier, info.level, 1, info.subclassIdentifier)
+		new SelectorPanel(actor, info.classIdentifier, toLevel, fromLevel, info.subclassIdentifier)
 			.render(true);
 	}
 
