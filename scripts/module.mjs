@@ -72,9 +72,9 @@ function _findCharacterSheetClasses() {
 		}
 	} catch { /* not available in all versions */ }
 
-	console.log(`${LOG_PREFIX} Found ${classes.size} character sheet class(es):`,
+/* 	console.log(`${LOG_PREFIX} Found ${classes.size} character sheet class(es):`,
 		[...classes].map((c) => c.name || '(anonymous)'),
-	);
+	); */
 	return [...classes];
 }
 
@@ -97,7 +97,7 @@ function _patchCharacterSheetControls() {
 		_registerActionHandler(SheetClass);
 	}
 
-	console.log(`${LOG_PREFIX} Patched ${patched.size} prototype(s) with header control`);
+/* 	console.log(`${LOG_PREFIX} Patched ${patched.size} prototype(s) with header control`); */
 }
 
 /**
@@ -321,7 +321,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
 		title: 'Nimble Selector',
 		icon: 'fa-solid fa-arrow-up-right-dots',
 		button: true,
-		onClick: _openForControlledToken,
+		onChange: _openForControlledToken,
 	};
 });
 
