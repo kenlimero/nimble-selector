@@ -52,8 +52,8 @@ class AutoGranter {
 	 * items for caller to handle via notification.
 	 * @param {Actor} actor
 	 * @param {string} classIdentifier
-	 * @param {number} fromLevel
-	 * @param {number} toLevel
+	 * @param {number} fromLevel - Start of level range (inclusive)
+	 * @param {number} toLevel - End of level range (inclusive)
 	 * @param {string|null} subclassIdentifier
 	 * @returns {Promise<AutoGrantResult>}
 	 */
