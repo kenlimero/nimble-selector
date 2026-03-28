@@ -1,7 +1,7 @@
 import { MODULE_ID, LOG_PREFIX, buildOwnedItemKeys } from '../utils/constants.mjs';
 import { ClassFeatureResolver } from '../data/ClassFeatureResolver.mjs';
 import { SchoolChoiceResolver } from '../data/SchoolChoiceResolver.mjs';
-import { SpellTierResolver } from '../data/SpellTierResolver.mjs';
+import { DataProvider } from '../data/DataProvider.mjs';
 import { CompendiumBrowser } from './CompendiumBrowser.mjs';
 import { ItemGranter } from './ItemGranter.mjs';
 
@@ -16,16 +16,21 @@ import { ItemGranter } from './ItemGranter.mjs';
  * Call shouldAutoGrant(actor) before execute() — execute() does not enforce the check internally.
  */
 class AutoGranter {
+	/** @type {ClassFeatureResolver} */
 	#featureResolver;
+	/** @type {SchoolChoiceResolver} */
 	#schoolChoiceResolver;
-	#tierResolver;
+	/** @type {DataProvider} */
+	#dataProvider;
+	/** @type {CompendiumBrowser} */
 	#compendiumBrowser;
+	/** @type {ItemGranter} */
 	#itemGranter;
 
 	constructor() {
 		this.#featureResolver = new ClassFeatureResolver();
 		this.#schoolChoiceResolver = new SchoolChoiceResolver();
-		this.#tierResolver = new SpellTierResolver();
+		this.#dataProvider = DataProvider.instance;
 		this.#compendiumBrowser = CompendiumBrowser.instance;
 		this.#itemGranter = new ItemGranter();
 	}
@@ -132,10 +137,10 @@ class AutoGranter {
 
 		if (pendingChoices.length > 0) return;
 
-		const maxTier = this.#tierResolver.resolve(classIdentifier, level, subclassIdentifier);
+		const maxTier = this.#dataProvider.getMaxSpellTier(classIdentifier, level, subclassIdentifier);
 		if (maxTier < 0) return; // No spellcasting
 
-		const minTier = this.#tierResolver.resolveMin(classIdentifier, subclassIdentifier);
+		const minTier = this.#dataProvider.getMinSpellTier(classIdentifier, subclassIdentifier);
 		const schools = this.#schoolChoiceResolver.resolveAllSchools(
 			actor, classIdentifier, level, subclassIdentifier,
 		);

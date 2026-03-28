@@ -1,6 +1,5 @@
 import { MODULE_ID, TEMPLATE_PATH, SCHOOL_ICONS, capitalize, buildOwnedItemKeys, ScrollPositionMixin } from '../utils/constants.mjs';
-import { SpellSchoolResolver } from '../data/SpellSchoolResolver.mjs';
-import { SpellTierResolver } from '../data/SpellTierResolver.mjs';
+import { DataProvider } from '../data/DataProvider.mjs';
 import { SchoolChoiceResolver } from '../data/SchoolChoiceResolver.mjs';
 import { CompendiumBrowser } from '../core/CompendiumBrowser.mjs';
 import { ItemGranter } from '../core/ItemGranter.mjs';
@@ -40,10 +39,8 @@ class SpellSelector extends ScrollPositionMixin(HandlebarsApplicationMixin(Appli
 	#maxTier = 0;
 	/** @type {number} */
 	#minTier = 0;
-	/** @type {SpellSchoolResolver} */
-	#schoolResolver = new SpellSchoolResolver();
-	/** @type {SpellTierResolver} */
-	#tierResolver = new SpellTierResolver();
+	/** @type {DataProvider} */
+	#dataProvider = DataProvider.instance;
 	/** @type {SchoolChoiceResolver} */
 	#choiceResolver = new SchoolChoiceResolver();
 	/** @type {CompendiumBrowser} */
@@ -105,12 +102,12 @@ class SpellSelector extends ScrollPositionMixin(HandlebarsApplicationMixin(Appli
 			this.#level,
 			this.#subclassIdentifier,
 		);
-		this.#maxTier = this.#tierResolver.resolve(
+		this.#maxTier = this.#dataProvider.getMaxSpellTier(
 			this.#classIdentifier,
 			this.#level,
 			this.#subclassIdentifier,
 		);
-		this.#minTier = this.#tierResolver.resolveMin(
+		this.#minTier = this.#dataProvider.getMinSpellTier(
 			this.#classIdentifier,
 			this.#subclassIdentifier,
 		);

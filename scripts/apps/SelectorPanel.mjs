@@ -1,7 +1,6 @@
 import { MODULE_ID, TEMPLATE_PATH, SCHOOL_ICONS, LOG_PREFIX, capitalize } from '../utils/constants.mjs';
 import { ClassFeatureResolver } from '../data/ClassFeatureResolver.mjs';
-import { SpellSchoolResolver } from '../data/SpellSchoolResolver.mjs';
-import { SpellTierResolver } from '../data/SpellTierResolver.mjs';
+import { DataProvider } from '../data/DataProvider.mjs';
 import { EquipmentProficiencyResolver } from '../data/EquipmentProficiencyResolver.mjs';
 import { CompendiumBrowser } from '../core/CompendiumBrowser.mjs';
 import { ClassFeatureSelector } from './ClassFeatureSelector.mjs';
@@ -30,10 +29,8 @@ class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 
 	/** @type {ClassFeatureResolver} */
 	#featureResolver = new ClassFeatureResolver();
-	/** @type {SpellSchoolResolver} */
-	#schoolResolver = new SpellSchoolResolver();
-	/** @type {SpellTierResolver} */
-	#tierResolver = new SpellTierResolver();
+	/** @type {DataProvider} */
+	#dataProvider = DataProvider.instance;
 	/** @type {EquipmentProficiencyResolver} */
 	#proficiencyResolver = new EquipmentProficiencyResolver();
 	/** @type {CompendiumBrowser} */
@@ -147,16 +144,16 @@ class SelectorPanel extends HandlebarsApplicationMixin(ApplicationV2) {
 	 * @returns {{ hasSpellcasting: boolean, spellSchools: Array<{id: string, label: string, icon: string}>, spellCount: number, maxTier: number }}
 	 */
 	#prepareSpellSummary() {
-		const hasSpellcasting = this.#schoolResolver.hasCasting(this.#classIdentifier, this.#subclassIdentifier);
+		const hasSpellcasting = this.#dataProvider.hasCasting(this.#classIdentifier, this.#subclassIdentifier);
 		const resolvedSchools = this.#choiceResolver.resolveAllSchools(
 			this.#actor, this.#classIdentifier, this.#level, this.#subclassIdentifier,
 		);
-		const maxTier = this.#tierResolver.resolve(
+		const maxTier = this.#dataProvider.getMaxSpellTier(
 			this.#classIdentifier,
 			this.#level,
 			this.#subclassIdentifier,
 		);
-		const minTier = this.#tierResolver.resolveMin(
+		const minTier = this.#dataProvider.getMinSpellTier(
 			this.#classIdentifier,
 			this.#subclassIdentifier,
 		);
