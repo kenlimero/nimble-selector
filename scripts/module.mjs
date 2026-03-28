@@ -167,8 +167,19 @@ function _registerActionHandler(SheetClass) {
 					const actorFlag = actor.getFlag(MODULE_ID, 'autoGrant');
 					const globalSetting = game.settings.get(MODULE_ID, 'autoGrantEnabled');
 					const current = actorFlag !== undefined ? Boolean(actorFlag) : globalSetting;
-					await actor.setFlag(MODULE_ID, 'autoGrant', !current);
-					this.render();
+					const newEnabled = !current;
+					await actor.setFlag(MODULE_ID, 'autoGrant', newEnabled);
+					// Header controls aren't re-rendered by render() in ApplicationV2 — update DOM directly
+					const btn = this.element?.querySelector('[data-action="nimbleSelectorToggleAutoGrant"]');
+					if (btn) {
+						const icon = btn.querySelector('i');
+						if (icon) icon.className = newEnabled ? 'fa-solid fa-bolt-slash' : 'fa-solid fa-bolt';
+						const newLabel = game.i18n.localize(
+							newEnabled ? 'NIMBLE_SELECTOR.settings.autoGrantOn' : 'NIMBLE_SELECTOR.settings.autoGrantOff',
+						);
+						btn.dataset.tooltip = newLabel;
+						btn.setAttribute('aria-label', newLabel);
+					}
 				};
 			}
 			return;
