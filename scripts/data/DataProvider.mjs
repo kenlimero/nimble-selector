@@ -317,18 +317,22 @@ class DataProvider {
 		return maxTier;
 	}
 
+	/** @type {WeakMap<object, Array<[number, number]>>} */
+	static #sortedPairsCache = new WeakMap();
+
 	/**
 	 * Convert a tier map to a sorted array of [level, tier] pairs.
-	 * Caches the result on the object for repeated lookups.
+	 * Caches the result via WeakMap to avoid polluting the source object.
 	 * @param {Record<string, number>} tierMap
 	 * @returns {Array<[number, number]>}
 	 */
 	static #toSortedPairs(tierMap) {
-		if (tierMap._sortedPairs) return tierMap._sortedPairs;
+		const cached = DataProvider.#sortedPairsCache.get(tierMap);
+		if (cached) return cached;
 		const pairs = Object.entries(tierMap)
 			.map(([lvl, tier]) => [Number(lvl), tier])
 			.sort(([a], [b]) => a - b);
-		tierMap._sortedPairs = pairs;
+		DataProvider.#sortedPairsCache.set(tierMap, pairs);
 		return pairs;
 	}
 
