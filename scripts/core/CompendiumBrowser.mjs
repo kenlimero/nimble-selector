@@ -138,11 +138,15 @@ class CompendiumBrowser {
 		const folderClassMap = this.#buildFolderClassMap(pack);
 
 		for (const entry of index) {
-			const featureData = this.#buildFeatureData(entry, folderClassMap);
-			const nameKey = normalizeString(entry.name);
+			try {
+				const featureData = this.#buildFeatureData(entry, folderClassMap);
+				const nameKey = normalizeString(entry.name);
 
-			pushToMapArray(this.#featureIndex, nameKey, featureData);
-			pushToMapArray(this.#featureByClassIndex, featureData._normalizedClass, featureData);
+				pushToMapArray(this.#featureIndex, nameKey, featureData);
+				pushToMapArray(this.#featureByClassIndex, featureData._normalizedClass, featureData);
+			} catch (err) {
+				console.warn(`${LOG_PREFIX} Skipped malformed feature entry "${entry?.name ?? entry?._id}":`, err);
+			}
 		}
 	}
 
@@ -229,20 +233,24 @@ class CompendiumBrowser {
 
 		const dataProvider = DataProvider.instance;
 		for (const entry of index) {
-			const normalizedName = normalizeString(entry.name);
-			const school = entry.system?.school ?? '';
-			this.#spellIndex.set(entry.uuid, {
-				uuid: entry.uuid,
-				name: entry.name,
-				_normalizedName: normalizedName,
-				img: entry.img,
-				school,
-				_normalizedSchool: normalizeString(school),
-				tier: entry.system?.tier ?? 0,
-				isUtility: CompendiumBrowser.#hasProperty(entry.system?.properties?.selected, 'utilitySpell'),
-				isSecret: dataProvider.isSecretSpell(normalizedName),
-				description: CompendiumBrowser.#extractDescription(entry.system?.description),
-			});
+			try {
+				const normalizedName = normalizeString(entry.name);
+				const school = entry.system?.school ?? '';
+				this.#spellIndex.set(entry.uuid, {
+					uuid: entry.uuid,
+					name: entry.name,
+					_normalizedName: normalizedName,
+					img: entry.img,
+					school,
+					_normalizedSchool: normalizeString(school),
+					tier: entry.system?.tier ?? 0,
+					isUtility: CompendiumBrowser.#hasProperty(entry.system?.properties?.selected, 'utilitySpell'),
+					isSecret: dataProvider.isSecretSpell(normalizedName),
+					description: CompendiumBrowser.#extractDescription(entry.system?.description),
+				});
+			} catch (err) {
+				console.warn(`${LOG_PREFIX} Skipped malformed spell entry "${entry?.name ?? entry?._id}":`, err);
+			}
 		}
 	}
 
@@ -262,24 +270,28 @@ class CompendiumBrowser {
 		});
 
 		for (const entry of index) {
-			const objectType = entry.system?.objectType ?? '';
-			const props = entry.system?.properties?.selected ?? [];
-			const price = entry.system?.price ?? {};
+			try {
+				const objectType = entry.system?.objectType ?? '';
+				const props = entry.system?.properties?.selected ?? [];
+				const price = entry.system?.price ?? {};
 
-			this.#itemIndex.set(entry.uuid, {
-				uuid: entry.uuid,
-				name: entry.name,
-				img: entry.img,
-				objectType,
-				_normalizedType: normalizeString(objectType),
-				properties: entry.system?.properties ?? {},
-				description: CompendiumBrowser.#extractDescription(entry.system?.description),
-				weaponAttr: CompendiumBrowser.#extractWeaponAttr(entry.system?.activation),
-				isRanged: Array.isArray(props) && props.includes('range'),
-				armorType: CompendiumBrowser.#extractArmorType(entry.system?.description?.public ?? ''),
-				priceValue: price.value ?? 0,
-				priceDenomination: price.denomination ?? 'gp',
-			});
+				this.#itemIndex.set(entry.uuid, {
+					uuid: entry.uuid,
+					name: entry.name,
+					img: entry.img,
+					objectType,
+					_normalizedType: normalizeString(objectType),
+					properties: entry.system?.properties ?? {},
+					description: CompendiumBrowser.#extractDescription(entry.system?.description),
+					weaponAttr: CompendiumBrowser.#extractWeaponAttr(entry.system?.activation),
+					isRanged: Array.isArray(props) && props.includes('range'),
+					armorType: CompendiumBrowser.#extractArmorType(entry.system?.description?.public ?? ''),
+					priceValue: price.value ?? 0,
+					priceDenomination: price.denomination ?? 'gp',
+				});
+			} catch (err) {
+				console.warn(`${LOG_PREFIX} Skipped malformed item entry "${entry?.name ?? entry?._id}":`, err);
+			}
 		}
 	}
 
@@ -395,6 +407,7 @@ class CompendiumBrowser {
 	 * @returns {SpellData[]}
 	 */
 	findSpells(options) {
+		if (!Array.isArray(options?.schools) || options.schools.length === 0) return [];
 		const results = [...this.#iterateMatchingSpells(options)];
 		results.sort((a, b) => a.tier - b.tier || a.name.localeCompare(b.name));
 		return results;
@@ -440,6 +453,7 @@ class CompendiumBrowser {
 	 * @returns {ItemData[]}
 	 */
 	findEquipmentByType(objectTypes) {
+		if (!Array.isArray(objectTypes) || objectTypes.length === 0) return [];
 		const normalizedTypes = new Set(objectTypes.map(normalizeString));
 		const results = [];
 
